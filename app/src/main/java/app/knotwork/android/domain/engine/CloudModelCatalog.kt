@@ -17,7 +17,7 @@ interface CloudModelCatalog {
      *
      * @param provider The provider.
      * @return The built-in list, or `null` for a provider whose model is typed (or picked from
-     *   the server's own list): OpenRouter, Groq, Ollama and a server the user runs.
+     *   the server's own list): OpenRouter, Groq, Ollama, GigaChat and a server the user runs.
      */
     fun offeredModels(provider: CloudProvider): List<String>?
 
@@ -25,7 +25,7 @@ interface CloudModelCatalog {
      * The model a run of [provider] uses when the user saved [savedId].
      *
      * A provider with a built-in list uses its default when nothing is saved or when the saved id
-     * is no longer offered; Ollama uses its default when nothing is saved; any other provider uses
+     * is no longer offered; Ollama and GigaChat use their defaults when nothing is saved; any other provider uses
      * exactly what was saved. A blank id counts as nothing saved.
      *
      * @param provider The provider.

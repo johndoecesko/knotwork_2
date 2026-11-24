@@ -96,7 +96,10 @@ object KoogModelMapper {
         CloudProvider.ANTHROPIC -> ANTHROPIC
         CloudProvider.GOOGLE -> GOOGLE
         CloudProvider.DEEPSEEK -> DEEPSEEK
-        CloudProvider.OPENROUTER, CloudProvider.GROQ, CloudProvider.OLLAMA, CloudProvider.OPENAI_COMPATIBLE -> null
+        CloudProvider.OPENROUTER, CloudProvider.GROQ, CloudProvider.OLLAMA, CloudProvider.OPENAI_COMPATIBLE,
+        // Koog lists no GigaChat models; its default lives in KoogCloudModelCatalog.
+        CloudProvider.GIGACHAT,
+        -> null
     }
 
     /**

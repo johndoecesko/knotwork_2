@@ -24,6 +24,7 @@ fun ProviderId.displayName(context: Context): String = when (this) {
     ProviderId.DeepSeek -> "DeepSeek"
     ProviderId.OpenRouter -> "OpenRouter"
     ProviderId.Groq -> "Groq"
+    ProviderId.GigaChat -> "GigaChat"
     ProviderId.Ollama -> "Ollama"
     ProviderId.OpenAiCompatible -> context.getString(R.string.settings_provider_openai_compatible)
 }

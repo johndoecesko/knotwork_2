@@ -41,7 +41,7 @@ class ModelNetworkGate @Inject constructor(private val networkSettings: NetworkS
 
     /**
      * Decides whether a hosted cloud provider (OpenAI, Anthropic, Google, DeepSeek, OpenRouter,
-     * Groq) may be reached. Credentials are the caller's concern; this answers only the policy
+     * Groq, GigaChat) may be reached. Credentials are the caller's concern; this answers only the policy
      * question.
      *
      * @return [CloudClientUnavailability.BlockedByLocalOnlyMode] while the restriction is

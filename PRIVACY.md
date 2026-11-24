@@ -113,13 +113,24 @@ from the first launch.
 If a pipeline step runs on a cloud provider and you have set it up, the text
 that step processes — the prompt and the relevant conversation context — is sent
 to the provider you selected: OpenAI, Anthropic, Google Gemini, DeepSeek,
-OpenRouter or Groq with your own API key, or a server you run and name by its
+OpenRouter, Groq or GigaChat (Sber) with your own key, or a server you run and name by its
 address — Ollama, or any server that speaks the OpenAI API (vLLM, LM Studio,
 llama.cpp). Attachments are never sent to a cloud provider (section 4).
 
 OpenRouter forwards a request to the company behind the model you chose there;
 its own policy and the routing settings of your OpenRouter account decide which
 one, and what they may keep.
+
+GigaChat is reached in two steps, both directly from your device to Sber. Your
+**authorization key** and the API version (scope) you picked go to Sber's
+OAuth endpoint (`ngw.devices.sberbank.ru`), which returns an access token
+valid for 30 minutes; the prompt and context then go to the GigaChat API
+(`api.giga.chat`) with that token. The token is kept in the app's memory only,
+never written to storage, and is asked for again after it expires or the app
+restarts. Sber's servers use certificates of the Russian Ministry of Digital
+Development's certificate authority, which Android does not trust by default;
+the app trusts that authority for those two hosts and for no other connection
+it makes.
 That step is a **Cloud** node, or a router, condition, decomposition,
 evaluation, tool or skill node whose engine is set to a cloud provider.
 
@@ -141,8 +152,9 @@ Three other paths reach the same providers, all also opt-in:
   set *Approve tool calls* to *Never*.
 - **Test connection** on a provider's settings screen, when you press it, asks
   that provider for its list of models with the key and address you entered;
-  for OpenRouter it first asks whether the key is valid. No prompt or
-  conversation text is sent.
+  for OpenRouter it first asks whether the key is valid, and for GigaChat it
+  first exchanges the authorization key for an access token as above. No
+  prompt or conversation text is sent.
 
 Apart from those three, a pipeline contacts a cloud provider only through a step
 that runs on one. A node's settings show its engine, so you can see which do.
@@ -450,7 +462,8 @@ what you configure — and, for the first entry below, on nothing at all — tho
 may be:
 
 - The cloud model provider you set up (OpenAI, Anthropic, Google, DeepSeek,
-  OpenRouter — and the model company it routes to — or Groq, with your key; or a
+  OpenRouter — and the model company it routes to — Groq, or Sber for GigaChat,
+  with your key; or a
   server you run and name by its address), for pipeline steps, memory embeddings
   (OpenAI or Ollama only) or `delegate_task`.
 - Hugging Face, or any host you paste a model URL for.

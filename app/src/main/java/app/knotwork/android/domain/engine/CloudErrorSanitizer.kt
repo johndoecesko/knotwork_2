@@ -18,8 +18,10 @@ package app.knotwork.android.domain.engine
  * the point where a provider exception becomes a message.
  *
  * The redaction is deliberately conservative: it matches the credential-bearing shapes
- * (secret-named query parameters and `Bearer` tokens) rather than trying to recognise any
- * particular provider's key format, which would silently miss the next provider added.
+ * (secret-named query parameters, `Bearer` tokens and `Basic` credentials) rather than trying to
+ * recognise any particular provider's key format, which would silently miss the next provider
+ * added. `Basic` arrived with GigaChat, whose authorization key travels as
+ * `Authorization: Basic <key>` to its OAuth endpoint.
  */
 object CloudErrorSanitizer {
 
@@ -40,6 +42,15 @@ object CloudErrorSanitizer {
 
     /** `Authorization: Bearer <token>` and bare `Bearer <token>` fragments. */
     private val BEARER_TOKEN = Regex("""\bBearer\s+\S+""", RegexOption.IGNORE_CASE)
+
+    /**
+     * `Authorization: Basic <credentials>` fragments (GigaChat's OAuth authorization key).
+     *
+     * Case-sensitive and shaped like Base64 — at least 16 characters, at least one of them a digit,
+     * `+`, `/` or `=` — because [redactSecrets] also runs over console text of every kind, and
+     * an English sentence such as "Basic understanding" must not be masked.
+     */
+    private val BASIC_CREDENTIALS = Regex("""\bBasic\s+(?=[A-Za-z0-9+/]*[0-9+/=])[A-Za-z0-9+/]{16,}={0,2}""")
 
     /**
      * Returns [message] with any embedded credential replaced by [MASK].
@@ -95,12 +106,13 @@ object CloudErrorSanitizer {
      * reporter's log tree — where the only job is that no credential gets past.
      *
      * @param text Any text that may quote a failing request.
-     * @return [text] with secret-named query-parameter values and `Bearer` tokens
-     *   replaced by the mask; identical to [text] when there was nothing to mask.
+     * @return [text] with secret-named query-parameter values, `Bearer` tokens and `Basic`
+     *   credentials replaced by the mask; identical to [text] when there was nothing to mask.
      */
     fun redactSecrets(text: String): String = text
         .replace(SECRET_QUERY_PARAM) { match -> "${match.groupValues[1]}=$MASK" }
         .replace(BEARER_TOKEN, "Bearer $MASK")
+        .replace(BASIC_CREDENTIALS, "Basic $MASK")
 
     /**
      * Replaces a message that trails off into the literal word `null`.

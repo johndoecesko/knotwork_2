@@ -1361,8 +1361,14 @@ send-time check then refuses.
 ### 4.4. Cloud LLM providers
 
 Cloud providers (`openai`, `anthropic`, `google`, `deepseek`, `openrouter`,
-`groq`, `ollama`, `openai_compatible`) implement the `CloudLlmProvider` interface
-in `domain`. OpenRouter, Groq and a server the user runs are Koog's own OpenAI
+`groq`, `gigachat`, `ollama`, `openai_compatible`) implement the `CloudLlmProvider` interface
+in `domain`. GigaChat is the one provider Koog has no client for: the app's own
+`data/engine/gigachat/GigaChatLLMClient` implements Koog's `LLMClient` on the same
+transport (`KoogTransportFactory`, hop rule and `Retry-After` included), buys an
+OAuth access token with the saved authorization key and scope, keeps it in the
+process-wide `GigaChatTokenCache` (memory only, refreshed a minute before expiry,
+one fetch at a time under a `Mutex`), repeats a request once after a 401 with a
+new token, and maps Koog tools to GigaChat `functions` (`GigaChatMessageMapper`). OpenRouter, Groq and a server the user runs are Koog's own OpenAI
 client with other settings (`data/engine/OpenAiCompatibleClients`): OpenRouter and
 Groq at fixed addresses, the user's server at the address they enter (with `/v1`,
 paths relative to it), and without an `Authorization` header when it has no key.

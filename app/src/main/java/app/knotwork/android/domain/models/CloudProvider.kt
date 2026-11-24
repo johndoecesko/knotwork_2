@@ -60,6 +60,14 @@ enum class CloudProvider(
     /** Groq hosted API, reached through its OpenAI-compatible API. */
     GROQ("groq", usesApiKey = true, usesBaseUrl = false, requiresModel = true),
 
+    /**
+     * Sber GigaChat API. The "key" saved for it is the project's authorization key (Base64 of
+     * `client_id:client_secret`), which the client exchanges for a 30-minute OAuth access token
+     * under the scope the user picks ([GigaChatScope]). The model is typed, or chosen from the
+     * server's list after *Test connection*; `GigaChat-2` is used while none is chosen.
+     */
+    GIGACHAT("gigachat", usesApiKey = true, usesBaseUrl = false, requiresModel = false),
+
     /** Self-hosted Ollama instance (typically over Wi-Fi); no key. */
     OLLAMA("ollama", usesApiKey = false, usesBaseUrl = true, requiresModel = false),
 
@@ -100,6 +108,7 @@ enum class CloudProvider(
             "deepseek" -> DEEPSEEK
             "openrouter" -> OPENROUTER
             "groq" -> GROQ
+            "gigachat" -> GIGACHAT
             "ollama" -> OLLAMA
             "openai_compatible" -> OPENAI_COMPATIBLE
             else -> null

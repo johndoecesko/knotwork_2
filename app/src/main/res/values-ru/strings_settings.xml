@@ -321,4 +321,12 @@
     <string name="help_reader_error_body">Файл, поставляемый с приложением, не читается. Переустановка заменит его. Тот же документ есть в интернете, без изменений.</string>
     <string name="help_reader_error_primary">Открыть в браузере</string>
     <string name="help_reader_error_secondary">Повторить</string>
+
+    <string name="settings_gigachat_key_label">Ключ авторизации</string>
+    <string name="settings_gigachat_key_hint">Ключ авторизации вашего проекта GigaChat API — как его показывает личный кабинет (Client ID и Client Secret в Base64). Он отправляется только на ngw.devices.sberbank.ru, который выдаёт токен доступа на 30 минут; промпты уходят на api.giga.chat с этим токеном.</string>
+    <string name="settings_gigachat_scope_label">Версия API (scope)</string>
+    <string name="settings_gigachat_scope_personal">Физлица · %1$s</string>
+    <string name="settings_gigachat_scope_business_prepaid">ИП и юрлица, платные пакеты · %1$s</string>
+    <string name="settings_gigachat_scope_business_payg">ИП и юрлица, pay-as-you-go · %1$s</string>
+    <string name="settings_gigachat_scope_hint">Должна совпадать с версией API, для которой выпущен проект, иначе ключ не примут.</string>
 </resources>

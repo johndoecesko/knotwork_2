@@ -45,6 +45,13 @@ Only Kotlin files appear inside the generated blocks.
   - `engine/` - Core LLM and inference engines.
     - `AndroidRunEnvironment.kt` - `RunEnvironment` read from the build and the device.
     - `CloudClientTimeouts.kt` - Network deadlines applied to every Koog model client the app builds — the chat clients in `KoogClientFactory` and the embedding clients in `app.knotwork.android.data.services.embedding.DefaultKoogEmbedderFactory`.
+    - `gigachat/` - GigaChat (Sber) client: Koog has none, so the app implements `LLMClient` itself on the shared transport.
+      - `GigaChatEndpoints.kt` - Where `GigaChatLLMClient` sends: the OAuth endpoint that turns the authorization key into an access token, and the REST API the token is used on.
+      - `GigaChatLLMClient.kt` - The Koog `LLMClient` of the GigaChat API: OAuth access token from `GigaChatTokenCache`, one repeat after a 401, SSE streaming with an `End` frame that says whether the answer was whole, functions, model list, embeddings.
+      - `GigaChatMessageMapper.kt` - Translates between Koog's prompt model and GigaChat's chat format — one system message first, tools as `functions`, a call and its result as GigaChat expects them back.
+      - `GigaChatModels.kt` - The Koog provider identity of every GigaChat model the app builds, and the model descriptors it sends.
+      - `GigaChatTokenCache.kt` - The GigaChat access tokens of this process, kept in memory only and shared by every client; refreshed a minute before expiry, one fetch at a time under a `Mutex`.
+      - `GigaChatWire.kt` - The JSON shapes of the GigaChat REST API (`/v1`) the client reads and sends.
     - `KoogClientFactory.kt` - Factory for Koog clients; data-layer impl of `domain/engine/CloudLlmClientFactory`. Every constructed client is retry-wrapped via `CloudRetryWrapper` and carries an explicit `ConnectionTimeoutConfig` (60 s socket / 30 s connect / 900 s request) — the per-read socket value bounds provider silence rather than answer length. `createClient` threads a `CloudRetryListener` for console observability; it is the one entry point for every caller, `delegate_task` included.
     - `KoogCloudLlmModelResolver.kt` - Data-layer impl of `domain/engine/CloudLlmModelResolver`: turns the model `CloudModelCatalog` names for the saved id into the Koog `LLModel` a run sends, with Ollama's context window.
     - `KoogCloudModelCatalog.kt` - Data-layer implementation of `CloudModelCatalog`: the built-in lists and defaults of `KoogModelMapper`, and Ollama's default.
@@ -57,13 +64,6 @@ Only Kotlin files appear inside the generated blocks.
     - `ModelHopRule.kt` - Where one request of a model client may go: the rule `KoogTransportFactory` applies to every hop — the request the client sends and each redirect a server answers with.
     - `ModelNetworkGate.kt` - The one place that decides whether a model request may leave the device right now.
     - `OpenAiCompatibleClients.kt` - Builds the Koog client of the providers reached through the OpenAI API: OpenRouter, Groq and a server the user runs (`CloudProvider.OPENAI_COMPATIBLE`).
-    - `gigachat/` - GigaChat (Sber) client: Koog has none, so the app implements `LLMClient` itself on the shared transport.
-      - `GigaChatEndpoints.kt` - Where `GigaChatLLMClient` sends: the OAuth endpoint that turns the authorization key into an access token, and the REST API the token is used on.
-      - `GigaChatLLMClient.kt` - The Koog `LLMClient` of the GigaChat API: OAuth access token from `GigaChatTokenCache`, one repeat after a 401, SSE streaming with an `End` frame that says whether the answer was whole, functions, model list, embeddings.
-      - `GigaChatMessageMapper.kt` - Translates between Koog's prompt model and GigaChat's chat format — one system message first, tools as `functions`, a call and its result as GigaChat expects them back.
-      - `GigaChatModels.kt` - The Koog provider identity of every GigaChat model the app builds, and the model descriptors it sends.
-      - `GigaChatTokenCache.kt` - The GigaChat access tokens of this process, kept in memory only and shared by every client; refreshed a minute before expiry, one fetch at a time under a `Mutex`.
-      - `GigaChatWire.kt` - The JSON shapes of the GigaChat REST API (`/v1`) the client reads and sends.
     - `OpenClAccelerationProbe.kt` - `HardwareAccelerationProbe` impl: decides whether GPU inference is plausible by linking `libOpenCL.so` (falling back to the conventional vendor paths) — never touches the native inference stack, so it cannot abort the process the way a real GPU init can. Memoised; both seams (linker, filesystem) injectable for JVM tests.
     - `retry/` - Cloud retry wrapping (data layer).
       - `CloudRetryPolicy.kt` - Decides whether a failed cloud call is tried again, and after how long.

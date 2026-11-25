@@ -7,6 +7,7 @@ import app.knotwork.android.domain.models.ChatHistorySummary
 import app.knotwork.android.domain.models.ChatMessage
 import app.knotwork.android.domain.models.Result
 import app.knotwork.android.domain.prompt.ChatTranscript
+import app.knotwork.android.domain.prompt.ModelTextLocalizer
 import app.knotwork.android.domain.prompt.PromptTemplateEngine
 import app.knotwork.android.domain.prompt.PromptVariableProvider
 import app.knotwork.android.domain.repositories.ChatRepository
@@ -61,6 +62,7 @@ class CompressChatHistoryUseCase @Inject constructor(
     private val promptTemplateEngine: PromptTemplateEngine,
     private val promptVariableProviders: Set<@JvmSuppressWildcards PromptVariableProvider>,
     private val memorySettings: MemorySettings,
+    private val modelTextLocalizer: ModelTextLocalizer = ModelTextLocalizer.ENGLISH,
 ) {
 
     /** What a single compression pass did. */
@@ -147,7 +149,7 @@ class CompressChatHistoryUseCase @Inject constructor(
      */
     private suspend fun runInference(priorSummary: String?, newMessages: List<ChatMessage>): String {
         val systemPrompt = promptTemplateEngine.render(
-            DefaultPrompts.HistoryCompression.SYSTEM_FALLBACK,
+            modelTextLocalizer.localize(DefaultPrompts.HistoryCompression.SYSTEM_FALLBACK),
             promptVariableProviders.toList(),
         )
         // Every role is kept — the summary stands in for the history the engine

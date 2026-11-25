@@ -22,6 +22,7 @@ import app.knotwork.android.domain.models.NodeOutput
 import app.knotwork.android.domain.models.NodeType
 import app.knotwork.android.domain.models.Result
 import app.knotwork.android.domain.models.RouteLabels
+import app.knotwork.android.domain.prompt.ModelTextLocalizer
 import app.knotwork.android.domain.repositories.RunSettings
 import app.knotwork.android.domain.usecases.LoadModelUseCase
 import kotlinx.coroutines.CancellationException
@@ -71,6 +72,7 @@ class SystemNodeExecutor @Inject constructor(
     private val structuredOutputGate: StructuredOutputGate,
     private val runSettings: RunSettings,
     private val cloudStructuredFactory: CloudStructuredInferenceClientFactory,
+    private val modelTextLocalizer: ModelTextLocalizer = ModelTextLocalizer.ENGLISH,
 ) : NodeExecutor {
 
     override fun execute(
@@ -81,7 +83,7 @@ class SystemNodeExecutor @Inject constructor(
         runId: String?,
         scope: ExecutionScope,
     ): Flow<NodeOutput> = flow {
-        val nodeSystemPrompt = node.systemPrompt ?: DefaultPrompts.System.SYSTEM_FALLBACK
+        val nodeSystemPrompt = node.systemPrompt ?: modelTextLocalizer.localize(DefaultPrompts.System.SYSTEM_FALLBACK)
         // Make image presence visible to the INTENT_ROUTER LLM so it can branch on
         // "the user attached an image" — otherwise invisible because only text flows
         // along the graph (only a boolean fact travels; the pixels never leave the
@@ -90,7 +92,7 @@ class SystemNodeExecutor @Inject constructor(
         // they never act on.
         val imageNote =
             if (node.type == NodeType.INTENT_ROUTER && scope.run.imagePresent) {
-                "\n\n${DefaultPrompts.System.IMAGE_PRESENT_NOTE}"
+                "\n\n${modelTextLocalizer.localize(DefaultPrompts.System.IMAGE_PRESENT_NOTE)}"
             } else {
                 ""
             }

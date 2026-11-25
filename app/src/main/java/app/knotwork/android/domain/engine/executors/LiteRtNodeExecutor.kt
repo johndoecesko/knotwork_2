@@ -11,6 +11,7 @@ import app.knotwork.android.domain.models.NodeExecutionResult
 import app.knotwork.android.domain.models.NodeModel
 import app.knotwork.android.domain.models.NodeOutput
 import app.knotwork.android.domain.models.Result
+import app.knotwork.android.domain.prompt.ModelTextLocalizer
 import app.knotwork.android.domain.repositories.GenerationSettings
 import app.knotwork.android.domain.repositories.MetricsRepository
 import app.knotwork.android.domain.repositories.ModelPerformanceRepository
@@ -34,6 +35,9 @@ import javax.inject.Inject
  *
  * Cancellation is rethrown explicitly so that structured concurrency keeps working — a
  * broad `catch (Exception)` would otherwise swallow it and leak coroutines.
+ *
+ * The node's own `systemPrompt` arrives already in the language the model is addressed
+ * in (`NodeInputComposer`); the prefix and the fallback are localized here.
  */
 class LiteRtNodeExecutor @Inject constructor(
     private val llmEngine: LlmInferenceEngine,
@@ -42,6 +46,7 @@ class LiteRtNodeExecutor @Inject constructor(
     private val modelPerformanceRepository: ModelPerformanceRepository,
     private val nativeMemorySampler: NativeMemorySampler,
     private val loadModelUseCase: LoadModelUseCase,
+    private val modelTextLocalizer: ModelTextLocalizer = ModelTextLocalizer.ENGLISH,
 ) : NodeExecutor {
 
     override fun execute(
@@ -52,8 +57,9 @@ class LiteRtNodeExecutor @Inject constructor(
         runId: String?,
         scope: ExecutionScope,
     ): Flow<NodeOutput> = flow {
-        val systemPromptPrefix = generationSettings.systemPromptPrefix.first()
-        val nodeSystemPrompt = node.systemPrompt ?: DefaultPrompts.LiteRt.SYSTEM_FALLBACK
+        // The prefix is the user's setting; only its untouched default has a translation.
+        val systemPromptPrefix = modelTextLocalizer.localize(generationSettings.systemPromptPrefix.first())
+        val nodeSystemPrompt = node.systemPrompt ?: modelTextLocalizer.localize(DefaultPrompts.LiteRt.SYSTEM_FALLBACK)
         val baseSystemPrompt = "$systemPromptPrefix\n$nodeSystemPrompt\n"
 
         // `inputText` is the assembled context produced upstream by NodeContextBuilder

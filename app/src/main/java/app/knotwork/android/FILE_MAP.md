@@ -255,6 +255,7 @@ Only Kotlin files appear inside the generated blocks.
     - `ResumableFileDownloader.kt` - The transfer itself: OkHttp streaming with HTTP `Range` resume, writing to a URL-keyed `.part` file that is renamed only on completion (so an interrupted download never passes for an installed model), handling a server that ignores the range (200) or rejects it (416), and reporting whole-percent progress. Owns the path-traversal-safe target resolution (containment through `PathContainment`).
     - `SharedHttpClient.kt` - Builds the app's shared OkHttp client — the one the `http_request` tool, model downloads and Hugging Face discovery go through.
   - `prompt/` - Built-in `PromptVariableProvider` implementations.
+    - `BundledModelTextLocalizer.kt` - `ModelTextLocalizer` over the bundled translations, `assets/model_text/<language>.json`, in the language the interface is shown in.
     - `DateVariableProvider.kt` - Resolves `$DATE` to the current device-local date (`dd MMMM yyyy`).
     - `DeviceVariableProvider.kt` - Resolves `$DEVICE` to a short "manufacturer · model · Android version" descriptor.
     - `LangVariableProvider.kt` - Resolves `$LANG` to the device's BCP-47 language tag.
@@ -622,6 +623,8 @@ Only Kotlin files appear inside the generated blocks.
     - `PresetTranslationsJson.kt` - Reads a bundled preset translation file, `assets/presets/l10n/<language>.json`.
   - `prompt/` - Prompt templating layer.
     - `ChatTranscript.kt` - Renders stored content into the line-oriented lists the app builds for a model — a conversation transcript, the numbered memory and tool-result lists — so that the content cannot open a line of its own.
+    - `ModelTextLocalizer.kt` - Puts a text the app itself wrote for a model into the language the model is addressed in.
+    - `ModelTextTranslationsJson.kt` - Reads a translation file of the app's model-facing texts, `assets/model_text/<language>.json`.
     - `PromptSegment.kt` - Sealed interface modelling rendered prompt chunks (literal/resolved/unknown) for previews.
     - `PromptTemplateEngine.kt` - Renders templates by substituting `$KEY` placeholders.
     - `PromptVariableProvider.kt` - Contract for a single substitutable prompt variable.

@@ -22,6 +22,7 @@ import app.knotwork.android.domain.models.NodeModel
 import app.knotwork.android.domain.models.NodeOutput
 import app.knotwork.android.domain.models.Result
 import app.knotwork.android.domain.prompt.ChatTranscript
+import app.knotwork.android.domain.prompt.ModelTextLocalizer
 import app.knotwork.android.domain.repositories.RunSettings
 import app.knotwork.android.domain.repositories.ToolRepository
 import app.knotwork.android.domain.usecases.LoadModelUseCase
@@ -64,6 +65,7 @@ class ToolNodeExecutor @Inject constructor(
     private val structuredOutputGate: StructuredOutputGate,
     private val runSettings: RunSettings,
     private val cloudStructuredFactory: CloudStructuredInferenceClientFactory,
+    private val modelTextLocalizer: ModelTextLocalizer = ModelTextLocalizer.ENGLISH,
 ) : NodeExecutor {
 
     /**
@@ -229,17 +231,21 @@ class ToolNodeExecutor @Inject constructor(
 
             // The description and the parameter schema are the tool's own text (an
             // MCP server's, for a server tool): their further lines are indented, so
-            // only a real tool can open a `Tool:` line.
+            // only a real tool can open a `Tool:` line. A built-in tool's description
+            // and schema have a translation; a server's or another app's do not.
+            val toolLabel = modelTextLocalizer.localize(DefaultPrompts.Tool.CATALOG_TOOL_LABEL)
+            val descriptionLabel = modelTextLocalizer.localize(DefaultPrompts.Tool.CATALOG_DESCRIPTION_LABEL)
+            val parametersLabel = modelTextLocalizer.localize(DefaultPrompts.Tool.CATALOG_PARAMETERS_LABEL)
             val toolsDescriptions = availableTools.joinToString("\n\n") {
                 listOf(
-                    "Tool: ${it.name}",
-                    ChatTranscript.entry("Description: ", it.description),
-                    ChatTranscript.entry("Parameters: ", it.parameters),
+                    "$toolLabel${it.name}",
+                    ChatTranscript.entry(descriptionLabel, modelTextLocalizer.localize(it.description)),
+                    ChatTranscript.entry(parametersLabel, modelTextLocalizer.localize(it.parameters)),
                 ).joinToString("\n")
             }
 
             val prompt = DefaultPrompts.renderTemplate(
-                DefaultPrompts.Tool.AUTO_SELECT_TEMPLATE,
+                modelTextLocalizer.localize(DefaultPrompts.Tool.AUTO_SELECT_TEMPLATE),
                 mapOf(
                     "AVAILABLE_TOOLS" to toolsDescriptions,
                     "INPUT_TEXT" to inputText,
@@ -277,11 +283,11 @@ class ToolNodeExecutor @Inject constructor(
         }
 
         val prompt = DefaultPrompts.renderTemplate(
-            DefaultPrompts.Tool.ARGUMENT_GENERATION_TEMPLATE,
+            modelTextLocalizer.localize(DefaultPrompts.Tool.ARGUMENT_GENERATION_TEMPLATE),
             mapOf(
                 "TOOL_NAME" to selectedTool.name,
-                "TOOL_DESCRIPTION" to selectedTool.description,
-                "TOOL_PARAMETERS" to selectedTool.parameters,
+                "TOOL_DESCRIPTION" to modelTextLocalizer.localize(selectedTool.description),
+                "TOOL_PARAMETERS" to modelTextLocalizer.localize(selectedTool.parameters),
                 "INPUT_TEXT" to inputText,
             ),
         )

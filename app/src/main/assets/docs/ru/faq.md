@@ -1,4 +1,4 @@
-<!-- translation of docs/faq.md, sha256 b52e85ec787f2d9d3adeb1a2af0f76f5f2ca991058531e2a0557ee870ad73c31 -->
+<!-- translation of docs/faq.md, sha256 20dbe5e53e6bb5716f1d88aa94b7ea7d915ce8e2be7701343ced573146098bc8 -->
 <!-- en: frequently-asked-questions -->
 # Вопросы и ответы
 

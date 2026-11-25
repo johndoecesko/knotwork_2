@@ -452,7 +452,7 @@ class NodeInputComposer private constructor(
     }
 
     private companion object {
-        /** How [RunContextNotes][app.knotwork.android.domain.models.RunContextNotes] joins its notes. */
+        /** How `RunContextNotes` joins its notes. */
         const val NOTE_SEPARATOR = "\n\n"
 
         /**

@@ -11,8 +11,10 @@ import kotlinx.coroutines.flow.StateFlow
  * anything itself — it reads and writes the system's choice, and reports every
  * change, wherever it was made.
  *
- * Only the interface follows this choice. What a model reads stays as written —
- * system prompts, tool descriptions and tool results are not translated.
+ * The interface follows this choice, and so do the texts the app itself writes for a
+ * model — its default prompts, the bundled pipelines' prompts and the built-in tools'
+ * descriptions — through [app.knotwork.android.domain.prompt.ModelTextLocalizer]. A
+ * prompt the user wrote and a tool's result are sent as written.
  */
 interface AppLanguageRepository {
 

@@ -149,8 +149,11 @@ https://github.com/user-attachments/assets/2ea06de5-6832-4e0c-ad48-430f375d8b72
   exists.
 - In English, Russian and Spanish: the screens, the bundled pipelines and the
   in-app help. Pick the language in *Settings → About → Language*, or follow the
-  phone's. What a model reads stays in English, and so do the documents that
-  open in a browser.
+  phone's. In Russian the model is addressed in Russian too — the app's own
+  prompts, the bundled pipelines' prompts and the built-in tools' descriptions —
+  while routing keywords, JSON keys and the output of machine-facing steps stay
+  English. Prompts you write are sent as written. The documents that open in a
+  browser stay in English.
 
 The full feature tour lives in the [user guide](docs/user-guide.md).
 

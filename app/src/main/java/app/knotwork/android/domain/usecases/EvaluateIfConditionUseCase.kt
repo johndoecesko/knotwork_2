@@ -13,6 +13,7 @@ import app.knotwork.android.domain.engine.structured.StructuredOutputGate
 import app.knotwork.android.domain.models.CloudProvider
 import app.knotwork.android.domain.models.NodeModel
 import app.knotwork.android.domain.models.NodeType
+import app.knotwork.android.domain.prompt.ModelTextLocalizer
 import app.knotwork.android.domain.repositories.RunSettings
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.first
@@ -49,6 +50,7 @@ class EvaluateIfConditionUseCase @Inject constructor(
     private val structuredOutputGate: StructuredOutputGate,
     private val runSettings: RunSettings,
     private val cloudStructuredFactory: CloudStructuredInferenceClientFactory,
+    private val modelTextLocalizer: ModelTextLocalizer = ModelTextLocalizer.ENGLISH,
 ) {
 
     /**
@@ -167,10 +169,11 @@ class EvaluateIfConditionUseCase @Inject constructor(
         repairListener: RepairListener,
         nodeInference: NodeInference,
     ): Outcome {
+        // A bundled condition the user left untouched has a translation; one they wrote does not.
         val prompt = DefaultPrompts.renderTemplate(
-            DefaultPrompts.IfCondition.EVALUATION_TEMPLATE,
+            modelTextLocalizer.localize(DefaultPrompts.IfCondition.EVALUATION_TEMPLATE),
             mapOf(
-                "CONDITION_PROMPT" to conditionPrompt,
+                "CONDITION_PROMPT" to modelTextLocalizer.localize(conditionPrompt),
                 "INPUT_TEXT" to inputText,
             ),
         )

@@ -8,6 +8,7 @@ import app.knotwork.android.domain.engine.structured.GateResult
 import app.knotwork.android.domain.engine.structured.RepairListener
 import app.knotwork.android.domain.engine.structured.StructuredOutputGate
 import app.knotwork.android.domain.prompt.ChatTranscript
+import app.knotwork.android.domain.prompt.ModelTextLocalizer
 import app.knotwork.android.domain.repositories.MetricsRepository
 import app.knotwork.android.domain.repositories.RunSettings
 import kotlinx.coroutines.CancellationException
@@ -49,6 +50,7 @@ class MemorySupersedeJudge @Inject constructor(
     private val structuredOutputGate: StructuredOutputGate,
     private val runSettings: RunSettings,
     private val metricsRepository: MetricsRepository,
+    private val modelTextLocalizer: ModelTextLocalizer = ModelTextLocalizer.ENGLISH,
 ) {
 
     /**
@@ -64,7 +66,11 @@ class MemorySupersedeJudge @Inject constructor(
         val result = try {
             structuredOutputGate.runToken(
                 inference = EngineStructuredInferenceClient(llmInferenceEngine, NodeInference.Unrecorded),
-                prompt = prompt(stored = stored, incoming = incoming),
+                prompt = prompt(
+                    stored = stored,
+                    incoming = incoming,
+                    instruction = modelTextLocalizer.localize(DefaultPrompts.MemorySupersede.INSTRUCTION),
+                ),
                 allowed = VERDICT_BY_TOKEN.keys,
                 nodeName = METRICS_KEY,
                 maxRepairs = maxRepairs,
@@ -108,11 +114,19 @@ class MemorySupersedeJudge @Inject constructor(
          * open a line of its own — a fact containing a line break followed by
          * `NEW: …` stays indented under its own entry.
          *
+         * The `STORED:` / `NEW:` / `ANSWER:` labels and the verdict words stay English in
+         * every language: the instruction's translations refer to them by these names.
+         *
          * @param stored Text of the fact already in memory.
          * @param incoming Text of the fact just extracted.
+         * @param instruction The instruction, in the language the model is addressed in.
          * @return The prompt sent to the model.
          */
-        fun prompt(stored: String, incoming: String): String = DefaultPrompts.MemorySupersede.INSTRUCTION + "\n\n" +
+        fun prompt(
+            stored: String,
+            incoming: String,
+            instruction: String = DefaultPrompts.MemorySupersede.INSTRUCTION,
+        ): String = instruction + "\n\n" +
             ChatTranscript.entry(prefix = "STORED: ", content = stored) + "\n" +
             ChatTranscript.entry(prefix = "NEW: ", content = incoming) + "\n\nANSWER: "
     }

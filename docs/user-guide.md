@@ -2584,10 +2584,15 @@ The app is in English, Russian and Spanish. **About → Language** picks the lan
 the app's screens: **Device language**, the default, follows your phone — the
 first of its languages the app is translated into, else English; the other
 entries are those languages, each named in itself. Your phone's per-app language
-setting is the same choice — change either and both change. What a model reads
-is not translated: system prompts, tool descriptions and tool results stay in
-English, and the Tools screen shows a built-in tool's description in your
-language while the model is still given the English one. The `$LANG` variable carries the language you read the app in, so a
+setting is the same choice — change either and both change. In Russian the
+model is addressed in Russian too: the app's default and internal prompts, the
+prompts of the bundled pipelines, templates and skills, and the built-in tools'
+descriptions reach it translated, as long as you have not edited them — a
+prompt you wrote or changed is sent exactly as written, and so is every tool
+result and every description an MCP server or another app supplies. Routing
+keywords, verdict tokens and JSON keys stay English, and steps whose output
+the pipeline reads rather than you still write English. In Spanish and English
+the model is addressed in English. The `$LANG` variable carries the language you read the app in, so a
 prompt that asks for an answer "in `$LANG`" follows your choice; `$LOCATION`
 keeps the region of the phone's own language settings.
 
@@ -2732,7 +2737,7 @@ repeated here.
 | Setting | What it means |
 |---|---|
 | **Identity** | *(no explanation — shows a value, decides nothing)* |
-| **Language** | The language of the app's screens. What a model reads stays in English: system prompts, tool descriptions and tool results. |
+| **Language** | The language of the app's screens, and of the app's own prompts to a model where they are translated (Russian). |
 | **App version & licenses** | *(no explanation — opens a screen that explains itself)* |
 | **Reset all settings** | *(no explanation — does what its name says)* |
 <!-- /AUTO-GEN:SETTINGS_HELP -->

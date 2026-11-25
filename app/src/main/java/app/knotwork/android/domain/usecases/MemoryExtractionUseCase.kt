@@ -12,6 +12,7 @@ import app.knotwork.android.domain.models.MemorySource
 import app.knotwork.android.domain.models.Result
 import app.knotwork.android.domain.models.Role
 import app.knotwork.android.domain.prompt.ChatTranscript
+import app.knotwork.android.domain.prompt.ModelTextLocalizer
 import app.knotwork.android.domain.prompt.PromptTemplateEngine
 import app.knotwork.android.domain.prompt.PromptVariableProvider
 import app.knotwork.android.domain.repositories.MemoryHistoryRepository
@@ -115,6 +116,7 @@ class MemoryExtractionUseCase @Inject constructor(
     private val metricsRepository: MetricsRepository,
     private val supersedeJudge: MemorySupersedeJudge,
     private val memoryHistoryRepository: MemoryHistoryRepository,
+    private val modelTextLocalizer: ModelTextLocalizer = ModelTextLocalizer.ENGLISH,
 ) {
 
     /**
@@ -175,7 +177,7 @@ class MemoryExtractionUseCase @Inject constructor(
      */
     private suspend fun extractFacts(messages: List<ChatMessage>): List<ExtractedFact> {
         val systemPrompt = promptTemplateEngine.render(
-            DefaultPrompts.MemoryExtraction.SYSTEM_FALLBACK,
+            modelTextLocalizer.localize(DefaultPrompts.MemoryExtraction.SYSTEM_FALLBACK),
             promptVariableProviders.toList(),
         )
         val dialogue = messages.joinToString(separator = "\n") { message ->

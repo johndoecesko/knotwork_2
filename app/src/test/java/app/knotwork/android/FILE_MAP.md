@@ -45,6 +45,7 @@ Only Kotlin files appear inside the generated blocks.
   - `KotlinStringLiterals.kt` - The string literals of Kotlin source, and the primary-constructor parameter lists of its classes — the two shapes the interface-text guards read (`DisplayedLiteralGuardTest`, `CatalogStringsWiringTest`).
   - `LayerDependencyKonsistTest.kt` - Konsist architecture guard enforcing the project's Clean Architecture dependency rule: dependencies flow strictly inward, `data` -> `domain` <- `presentation`, and `domain` depends on neither sibling.
   - `LocalInferenceSeamKonsistTest.kt` - Census of the places that call the on-device model directly.
+  - `ModelTextTranslationCoverageTest.kt` - Every text the app writes for a model has a translation in every language whose model-text file exists, the translation was written for the English the source carries now, and it keeps what the code compares against.
   - `NetworkClientImports.kt` - The import prefixes that mean "this file can speak to the network", shared by every guard that asks the question: the allow-list `NetworkEgressInventoryKonsistTest` and the three deny-lists (`JournalExportNoNetworkKonsistTest`, `PromptPackNoNetworkKonsistTest`, `UsageTelemetryNoNetworkKonsistTest`).
   - `NetworkEgressInventoryKonsistTest.kt` - Allow-list guard over every file that can open a network connection.
   - `NotificationIdSourceGuardTest.kt` - Keeps `app.knotwork.android.domain.constants.NotificationIds` the only place a notification id is decided.
@@ -188,6 +189,7 @@ Only Kotlin files appear inside the generated blocks.
     - `ResumableFileDownloaderTest.kt` - Covers the streaming downloader, with the weight on the paths that only matter once a transfer can be interrupted: resuming a partial file, refusing to resume when that would corrupt the result, and never letting an unfinished transfer sit at the final file name where it would pass for an installed model.
     - `SharedHttpClientTest.kt` - The shared client's cleartext guard sees **every hop**, redirects included.
   - `prompt/` - Tests for the built-in `PromptVariableProvider` implementations.
+    - `BundledModelTextLocalizerTest.kt` - `BundledModelTextLocalizer`: the model is addressed in the interface language, a text is swapped only when it is exactly the English a translation was written for, the file is read once per language, and a missing or broken file leaves the model addressed in English.
     - `DateVariableProviderTest.kt` - Unit tests for `DateVariableProvider`.
     - `DeviceVariableProviderTest.kt` - `DeviceVariableProvider`: the `$DEVICE` descriptor, whose format a run header shares through `DeviceVariableProvider.describe`.
     - `LocationVariableProviderTest.kt` - `$LOCATION` takes the region from the device's languages — not from the process default, which a language picked for the app alone replaces with a country-less one (`ru`), as measured on API 34.
@@ -420,6 +422,7 @@ Only Kotlin files appear inside the generated blocks.
   - `prompt/` - Tests for the prompt templating layer.
     - `ChatTranscriptTest.kt` - Unit tests for `ChatTranscript` — the one rule by which stored content is laid into a model's line-oriented lists without being able to open a line of its own.
     - `ForgedTurnFixture.kt` - Shared fixture for the transcript-forgery tests: message content that tries to open a turn of its own after each of the eight line terminators a tokenizer may render as a line break, and a splitter that honours all eight.
+    - `ModelTextTranslationsJsonTest.kt` - `ModelTextTranslationsJson`: what a model-text translation file must hold, and that one English text cannot carry two translations.
     - `PromptTemplateEngineIntegrationTest.kt` - Integration tests for `PromptTemplateEngine` wired with the real built-in `app.knotwork.android.domain.prompt.PromptVariableProvider` implementations (`$DATE`, `$TIME`, `$TOOLS`).
     - `PromptTemplateEngineTest.kt` - Tests for PromptTemplateEngine.
   - `promptio/` - Tests for the prompt-preset export/import gateway.

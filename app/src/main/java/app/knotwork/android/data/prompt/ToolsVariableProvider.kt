@@ -1,6 +1,7 @@
 package app.knotwork.android.data.prompt
 
 import app.knotwork.android.domain.prompt.ChatTranscript
+import app.knotwork.android.domain.prompt.ModelTextLocalizer
 import app.knotwork.android.domain.prompt.PromptVariableProvider
 import app.knotwork.android.domain.repositories.ToolRepository
 import javax.inject.Inject
@@ -19,11 +20,19 @@ import javax.inject.Singleton
  * for "no value" cases and keeps the rendered prompt clean instead of showing
  * "No tools".
  *
+ * A built-in tool's description comes in the language the model is addressed in;
+ * a server's or another app's comes as its author wrote it.
+ *
  * @property toolRepository Domain abstraction over the active tool registry;
  * its `getAvailableTools()` already filters out user-disabled local tools.
+ * @property modelTextLocalizer Puts a built-in tool's description into the language
+ * the model is addressed in.
  */
 @Singleton
-class ToolsVariableProvider @Inject constructor(private val toolRepository: ToolRepository) : PromptVariableProvider {
+class ToolsVariableProvider @Inject constructor(
+    private val toolRepository: ToolRepository,
+    private val modelTextLocalizer: ModelTextLocalizer = ModelTextLocalizer.ENGLISH,
+) : PromptVariableProvider {
 
     override fun key(): String = KEY
 
@@ -44,7 +53,7 @@ class ToolsVariableProvider @Inject constructor(private val toolRepository: Tool
         // A description is the tool's own text — an MCP server's, for a server
         // tool — so its further lines are indented and cannot pose as a tool entry.
         return tools.joinToString(separator = "\n") { tool ->
-            ChatTranscript.entry("${tool.name} — ", tool.description)
+            ChatTranscript.entry("${tool.name} — ", modelTextLocalizer.localize(tool.description))
         }
     }
 

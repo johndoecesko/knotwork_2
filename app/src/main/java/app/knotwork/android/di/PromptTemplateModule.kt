@@ -1,5 +1,6 @@
 package app.knotwork.android.di
 
+import app.knotwork.android.data.prompt.BundledModelTextLocalizer
 import app.knotwork.android.data.prompt.DateVariableProvider
 import app.knotwork.android.data.prompt.DeviceVariableProvider
 import app.knotwork.android.data.prompt.LangVariableProvider
@@ -9,6 +10,7 @@ import app.knotwork.android.data.prompt.ModelVariableProvider
 import app.knotwork.android.data.prompt.TimeVariableProvider
 import app.knotwork.android.data.prompt.ToolsVariableProvider
 import app.knotwork.android.data.prompt.UserVariableProvider
+import app.knotwork.android.domain.prompt.ModelTextLocalizer
 import app.knotwork.android.domain.prompt.PromptVariableProvider
 import dagger.Binds
 import dagger.Module
@@ -25,6 +27,9 @@ import dagger.multibindings.Multibinds
  * `Set<PromptVariableProvider>`. Consumers — currently [app.knotwork.android.domain.engine.GraphExecutionEngine]
  * and the prompt-preview UI — inject this set and pass it to
  * [app.knotwork.android.domain.prompt.PromptTemplateEngine.render] verbatim.
+ *
+ * Also binds [ModelTextLocalizer], which puts the app's own model-facing texts into
+ * the language the model is addressed in before they are rendered.
  *
  * The [app.knotwork.android.domain.prompt.PromptTemplateEngine] itself is provided
  * by Hilt through its `@Inject` constructor, so no `@Provides` for the engine
@@ -114,4 +119,11 @@ abstract class PromptTemplateModule {
     @Binds
     @IntoSet
     abstract fun bindDeviceVariableProvider(impl: DeviceVariableProvider): PromptVariableProvider
+
+    /**
+     * Binds [ModelTextLocalizer] to [BundledModelTextLocalizer] — the app's own
+     * model-facing texts in the interface language, from `assets/model_text/<language>.json`.
+     */
+    @Binds
+    abstract fun bindModelTextLocalizer(impl: BundledModelTextLocalizer): ModelTextLocalizer
 }

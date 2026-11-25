@@ -57,6 +57,13 @@ Only Kotlin files appear inside the generated blocks.
     - `ModelHopRule.kt` - Where one request of a model client may go: the rule `KoogTransportFactory` applies to every hop — the request the client sends and each redirect a server answers with.
     - `ModelNetworkGate.kt` - The one place that decides whether a model request may leave the device right now.
     - `OpenAiCompatibleClients.kt` - Builds the Koog client of the providers reached through the OpenAI API: OpenRouter, Groq and a server the user runs (`CloudProvider.OPENAI_COMPATIBLE`).
+    - `gigachat/` - GigaChat (Sber) client: Koog has none, so the app implements `LLMClient` itself on the shared transport.
+      - `GigaChatEndpoints.kt` - Where `GigaChatLLMClient` sends: the OAuth endpoint that turns the authorization key into an access token, and the REST API the token is used on.
+      - `GigaChatLLMClient.kt` - The Koog `LLMClient` of the GigaChat API: OAuth access token from `GigaChatTokenCache`, one repeat after a 401, SSE streaming with an `End` frame that says whether the answer was whole, functions, model list, embeddings.
+      - `GigaChatMessageMapper.kt` - Translates between Koog's prompt model and GigaChat's chat format — one system message first, tools as `functions`, a call and its result as GigaChat expects them back.
+      - `GigaChatModels.kt` - The Koog provider identity of every GigaChat model the app builds, and the model descriptors it sends.
+      - `GigaChatTokenCache.kt` - The GigaChat access tokens of this process, kept in memory only and shared by every client; refreshed a minute before expiry, one fetch at a time under a `Mutex`.
+      - `GigaChatWire.kt` - The JSON shapes of the GigaChat REST API (`/v1`) the client reads and sends.
     - `OpenClAccelerationProbe.kt` - `HardwareAccelerationProbe` impl: decides whether GPU inference is plausible by linking `libOpenCL.so` (falling back to the conventional vendor paths) — never touches the native inference stack, so it cannot abort the process the way a real GPU init can. Memoised; both seams (linker, filesystem) injectable for JVM tests.
     - `retry/` - Cloud retry wrapping (data layer).
       - `CloudRetryPolicy.kt` - Decides whether a failed cloud call is tried again, and after how long.
@@ -255,6 +262,7 @@ Only Kotlin files appear inside the generated blocks.
     - `ResumableFileDownloader.kt` - The transfer itself: OkHttp streaming with HTTP `Range` resume, writing to a URL-keyed `.part` file that is renamed only on completion (so an interrupted download never passes for an installed model), handling a server that ignores the range (200) or rejects it (416), and reporting whole-percent progress. Owns the path-traversal-safe target resolution (containment through `PathContainment`).
     - `SharedHttpClient.kt` - Builds the app's shared OkHttp client — the one the `http_request` tool, model downloads and Hugging Face discovery go through.
   - `prompt/` - Built-in `PromptVariableProvider` implementations.
+    - `BundledModelTextLocalizer.kt` - `ModelTextLocalizer` over the bundled translations, `assets/model_text/<language>.json`, in the language the interface is shown in.
     - `DateVariableProvider.kt` - Resolves `$DATE` to the current device-local date (`dd MMMM yyyy`).
     - `DeviceVariableProvider.kt` - Resolves `$DEVICE` to a short "manufacturer · model · Android version" descriptor.
     - `LangVariableProvider.kt` - Resolves `$LANG` to the device's BCP-47 language tag.
@@ -515,6 +523,7 @@ Only Kotlin files appear inside the generated blocks.
     - `ExternalAutomationRejectionReason.kt` - The single refusal dictionary of the external entry point (malformed-request reasons and policy refusals in one enum, so journal and user-facing text share one vocabulary). Names are persisted and published — never renamed.
     - `ExternalAutomationRequest.kt` - Validated external request (`target`, `prompt`, `requestId`, `returnAction`, `returnPackage`) plus `ExternalAutomationTarget` (ById / ByName) and `ExternalAutomationBinding` (the one allowed pipeline, with `allows(target)` — the membership test a future multi-pipeline allowlist would widen).
     - `ExternalAutomationStatus.kt` - Sealed status an external request is reported in: `Accepted` / `Completed` / `Failed` / `Rejected(reason)` / `Blocked(reason)`. Sealed rather than flat so a refusal always carries its cause; discriminators are persisted and part of the public contract.
+    - `GigaChatScope.kt` - The GigaChat API version (OAuth `scope`) an authorization key was issued for: `GIGACHAT_API_PERS`, `GIGACHAT_API_B2B` or `GIGACHAT_API_CORP`.
     - `Identity.kt` - Snapshot of the device-local identity (display name, 8-hex device id, AndroidKeyStore availability) shown on the Settings identity card.
     - `ImportCollisionResolution.kt` - Enum (`REPLACE` / `IMPORT_AS_COPY`) for how single/bundle import resolves a pipeline-id collision with the existing library.
     - `ImportProblem.kt` - Why a pipeline, a pipeline bundle or a memory export could not be imported.
@@ -622,6 +631,8 @@ Only Kotlin files appear inside the generated blocks.
     - `PresetTranslationsJson.kt` - Reads a bundled preset translation file, `assets/presets/l10n/<language>.json`.
   - `prompt/` - Prompt templating layer.
     - `ChatTranscript.kt` - Renders stored content into the line-oriented lists the app builds for a model — a conversation transcript, the numbered memory and tool-result lists — so that the content cannot open a line of its own.
+    - `ModelTextLocalizer.kt` - Puts a text the app itself wrote for a model into the language the model is addressed in.
+    - `ModelTextTranslationsJson.kt` - Reads a translation file of the app's model-facing texts, `assets/model_text/<language>.json`.
     - `PromptSegment.kt` - Sealed interface modelling rendered prompt chunks (literal/resolved/unknown) for previews.
     - `PromptTemplateEngine.kt` - Renders templates by substituting `$KEY` placeholders.
     - `PromptVariableProvider.kt` - Contract for a single substitutable prompt variable.

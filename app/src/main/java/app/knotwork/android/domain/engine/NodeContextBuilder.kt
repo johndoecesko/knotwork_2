@@ -1,5 +1,6 @@
 package app.knotwork.android.domain.engine
 
+import app.knotwork.android.domain.constants.DefaultPrompts
 import app.knotwork.android.domain.engine.structured.ReasoningBlockSplitter
 import app.knotwork.android.domain.models.ChatMessage
 import app.knotwork.android.domain.models.MemoryChunk
@@ -7,6 +8,7 @@ import app.knotwork.android.domain.models.NodeContextConfig
 import app.knotwork.android.domain.models.Role
 import app.knotwork.android.domain.models.ToolInvocationResult
 import app.knotwork.android.domain.prompt.ChatTranscript
+import app.knotwork.android.domain.prompt.ModelTextLocalizer
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -50,9 +52,26 @@ import javax.inject.Singleton
  * enabled at all) the builder returns an empty string; callers must decide
  * how to handle that, since the ban on fully-empty contexts is enforced at
  * the validation layer.
+ *
+ * The headers and the note on a cut tool result are the app's own words to the
+ * model ([DefaultPrompts.ContextBlocks]), so they come in the language the model
+ * is addressed in; what goes under them is left exactly as it was stored.
+ *
+ * @property modelTextLocalizer Puts the headers and the cut note into the language
+ *   the model is addressed in; English unless bound otherwise.
  */
 @Singleton
-class NodeContextBuilder @Inject constructor() {
+class NodeContextBuilder @Inject constructor(
+    private val modelTextLocalizer: ModelTextLocalizer,
+) {
+
+    /**
+     * English-only instance for tests and callers outside Hilt. Kept as a
+     * secondary constructor rather than a default argument: a default on the
+     * only parameter makes Kotlin emit a second, also `@Inject`-annotated,
+     * no-arg constructor, which Dagger rejects.
+     */
+    constructor() : this(ModelTextLocalizer.ENGLISH)
 
     /**
      * Renders the assembled context string for a single node execution.
@@ -104,7 +123,7 @@ class NodeContextBuilder @Inject constructor() {
         return blocks.joinToString(BLOCK_SEPARATOR)
     }
 
-    private fun renderBlock(header: String, body: String): String = "$header\n$body"
+    private fun renderBlock(header: String, body: String): String = "${modelTextLocalizer.localize(header)}\n$body"
 
     /**
      * Renders the live window as a numbered transcript.
@@ -164,18 +183,19 @@ class NodeContextBuilder @Inject constructor() {
         if (budget == null || text.length <= budget + OWN_NOTE_ALLOWANCE) return text
         var cut = budget.coerceAtLeast(1)
         if (text[cut - 1].isHighSurrogate()) cut--
-        return text.substring(0, cut) +
-            "\n[... ${text.length - cut} more characters of this tool result were cut " +
-            "to fit the on-device model's context]"
+        return text.substring(0, cut) + DefaultPrompts.renderTemplate(
+            modelTextLocalizer.localize(DefaultPrompts.ContextBlocks.TOOL_RESULT_CUT_NOTE_TEMPLATE),
+            mapOf("COUNT" to (text.length - cut).toString()),
+        )
     }
 
     private companion object {
-        private const val HEADER_ORIGINAL_TASK = "--- Original Task ---"
-        private const val HEADER_EARLIER_SUMMARY = "--- Earlier conversation (summarized) ---"
-        private const val HEADER_CHAT_HISTORY = "--- Chat History ---"
-        private const val HEADER_LONG_TERM_MEMORY = "--- Long-Term Memory ---"
-        private const val HEADER_TOOL_RESULTS = "--- Tool Results ---"
-        private const val HEADER_PREVIOUS_NODE_OUTPUT = "--- Previous Node Output ---"
+        private const val HEADER_ORIGINAL_TASK = DefaultPrompts.ContextBlocks.HEADER_ORIGINAL_TASK
+        private const val HEADER_EARLIER_SUMMARY = DefaultPrompts.ContextBlocks.HEADER_EARLIER_SUMMARY
+        private const val HEADER_CHAT_HISTORY = DefaultPrompts.ContextBlocks.HEADER_CHAT_HISTORY
+        private const val HEADER_LONG_TERM_MEMORY = DefaultPrompts.ContextBlocks.HEADER_LONG_TERM_MEMORY
+        private const val HEADER_TOOL_RESULTS = DefaultPrompts.ContextBlocks.HEADER_TOOL_RESULTS
+        private const val HEADER_PREVIOUS_NODE_OUTPUT = DefaultPrompts.ContextBlocks.HEADER_PREVIOUS_NODE_OUTPUT
         private const val BLOCK_SEPARATOR = "\n\n"
 
         /**

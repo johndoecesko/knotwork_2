@@ -1530,7 +1530,7 @@ pipeline can run on another device. The line under the field says what happens
 if it is not set up where the pipeline runs — a Cloud node fails and names the
 reason; another node runs on the on-device model and writes a console line.
 **Auto** uses the first configured of Google, Anthropic, OpenAI and DeepSeek —
-never OpenRouter, Groq or your own server — and the field shows which one that
+never OpenRouter, Groq, GigaChat or your own server — and the field shows which one that
 is on this device.
 
 For the **IntentRouter** node, the Classes section in its config
@@ -2584,10 +2584,15 @@ The app is in English, Russian and Spanish. **About → Language** picks the lan
 the app's screens: **Device language**, the default, follows your phone — the
 first of its languages the app is translated into, else English; the other
 entries are those languages, each named in itself. Your phone's per-app language
-setting is the same choice — change either and both change. What a model reads
-is not translated: system prompts, tool descriptions and tool results stay in
-English, and the Tools screen shows a built-in tool's description in your
-language while the model is still given the English one. The `$LANG` variable carries the language you read the app in, so a
+setting is the same choice — change either and both change. In Russian the
+model is addressed in Russian too: the app's default and internal prompts, the
+prompts of the bundled pipelines, templates and skills, and the built-in tools'
+descriptions reach it translated, as long as you have not edited them — a
+prompt you wrote or changed is sent exactly as written, and so is every tool
+result and every description an MCP server or another app supplies. Routing
+keywords, verdict tokens and JSON keys stay English, and steps whose output
+the pipeline reads rather than you still write English. In Spanish and English
+the model is addressed in English. The `$LANG` variable carries the language you read the app in, so a
 prompt that asks for an answer "in `$LANG`" follows your choice; `$LOCATION`
 keeps the region of the phone's own language settings.
 
@@ -2732,7 +2737,7 @@ repeated here.
 | Setting | What it means |
 |---|---|
 | **Identity** | *(no explanation — shows a value, decides nothing)* |
-| **Language** | The language of the app's screens. What a model reads stays in English: system prompts, tool descriptions and tool results. |
+| **Language** | The language of the app's screens, and of the app's own prompts to a model where they are translated (Russian). |
 | **App version & licenses** | *(no explanation — opens a screen that explains itself)* |
 | **Reset all settings** | *(no explanation — does what its name says)* |
 <!-- /AUTO-GEN:SETTINGS_HELP -->
@@ -2783,7 +2788,7 @@ The active on-device model, its backend, and external cloud providers.
   models.
 - **External providers** *(Basic link)* — one row per provider, in this order:
   the hosted ones (**OpenAI**, **Anthropic**, **Google**, **DeepSeek**,
-  **OpenRouter**, **Groq**), then the servers you run (**Ollama**, an
+  **OpenRouter**, **Groq**, **GigaChat**), then the servers you run (**Ollama**, an
   **OpenAI-compatible server**). A row shows the masked key fingerprint — or, for
   a server you run, its address and a **LAN** pill — and the model its runs use; tap
   it to open the provider's screen. An unset row says what it needs (*tap to add
@@ -2809,6 +2814,18 @@ A provider's screen shows its fields in the order you fill them, with
 - **OpenRouter, Groq** — the address they send to is shown read-only under
   **Sends to**; an API key (**required**) and a **Model id** (**required**) that
   you type or choose from the provider's list.
+- **GigaChat** — the **Authorization key** of your GigaChat API project
+  (**required**; the Base64 value the personal account shows, made of the
+  Client ID and Client Secret) and the **API version (scope)** the project was
+  issued for: *Individuals* (`GIGACHAT_API_PERS`), *Businesses, prepaid
+  packages* (`GIGACHAT_API_B2B`) or *Businesses, pay-as-you-go*
+  (`GIGACHAT_API_CORP`) — a key used under another scope is refused. The key
+  goes only to Sber's OAuth endpoint (`ngw.devices.sberbank.ru`), which returns
+  an access token valid for 30 minutes; the app keeps that token in memory,
+  renews it a minute before it expires, and sends prompts to
+  `https://api.giga.chat/v1` with it. A **Model id** you type or choose after
+  **Test connection** (`GigaChat-2-Pro`, `GigaChat-2-Max`, `GigaChat-3-Ultra`
+  where your tariff includes it); left empty, runs use `GigaChat-2`.
 - **Ollama** — its base URL, a model name (left empty, runs use `llama3`, as
   the empty field shows), and the context window.
 - **OpenAI-compatible server** — for vLLM, LM Studio, llama.cpp or any server
@@ -2909,6 +2926,7 @@ working setups:
 |---|---|
 | **OpenAI**, **DeepSeek** | Yes — measured. |
 | **Google** | Yes — its client reports a broken stream as an error on its own. |
+| **GigaChat** | Yes — the app's own client reports a stream that ended without a finishing marker or `[DONE]`. To be confirmed against the live service on a device. |
 | **Ollama** | **No.** Its client never sends the finishing marker at all, so its absence proves nothing; checking for it would fail every healthy run. |
 | **Anthropic** | **No.** We could not produce a trustworthy test either way, and guessing is exactly the failure this check exists to prevent. |
 | **OpenRouter**, **Groq**, **OpenAI-compatible server** | **No — not yet measured.** Whether each server sends the marker is checked on a device before it is relied on. |
@@ -3079,7 +3097,7 @@ Basic:
 - **Block network from local model** — when on, no model request leaves this
   device or your own network:
   - **Hosted providers** (OpenAI, Anthropic, Google, DeepSeek, OpenRouter,
-    Groq) are refused even with a key saved — for Cloud steps, `delegate_task`
+    Groq, GigaChat) are refused even with a key saved — for Cloud steps, `delegate_task`
     and memory alike.
     If OpenAI is your **Embedding model**, memory switches to the on-device
     model while the restriction is on. Memories embedded by OpenAI are recalled

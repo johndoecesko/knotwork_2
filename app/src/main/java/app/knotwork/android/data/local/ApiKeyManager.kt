@@ -7,6 +7,7 @@ import app.knotwork.android.data.local.crypto.KeystoreBackedPrefsStore
 import app.knotwork.android.data.local.crypto.SecureValueUnreadableException
 import app.knotwork.android.domain.constants.SettingsDefaults
 import app.knotwork.android.domain.models.CloudProvider
+import app.knotwork.android.domain.models.GigaChatScope
 import app.knotwork.android.domain.repositories.ApiKeyRepository
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
@@ -71,9 +72,16 @@ class ApiKeyManager @Inject constructor(@ApplicationContext private val context:
         )
     }
 
+    private val gigaChatScopeFlow by lazy {
+        MutableStateFlow(GigaChatScope.fromWire(readOrNull(GIGACHAT_SCOPE_ENTRY)))
+    }
+
     override val storeName: String = PREFS_NAME
 
-    /** Each provider's chosen model and server address, and the Ollama context window — not secrets. */
+    /**
+     * Each provider's chosen model and server address, the Ollama context window and the GigaChat
+     * scope — not secrets.
+     */
     override suspend fun alwaysEntries(): Map<String, String> = buildMap {
         CloudProvider.entries.forEach { provider ->
             listOf(modelEntry(provider), baseUrlEntry(provider)).forEach { name ->
@@ -81,6 +89,7 @@ class ApiKeyManager @Inject constructor(@ApplicationContext private val context:
             }
         }
         peek(OLLAMA_CONTEXT_ENTRY)?.let { put(OLLAMA_CONTEXT_ENTRY, it) }
+        peek(GIGACHAT_SCOPE_ENTRY)?.let { put(GIGACHAT_SCOPE_ENTRY, it) }
     }
 
     /** Each provider's API key. */
@@ -123,6 +132,11 @@ class ApiKeyManager @Inject constructor(@ApplicationContext private val context:
             ollamaContextFlow.value = it
             written++
         }
+        entries[GIGACHAT_SCOPE_ENTRY]?.let { GigaChatScope.fromWire(it) }?.let {
+            store.putString(GIGACHAT_SCOPE_ENTRY, it.wire, synchronous = true)
+            gigaChatScopeFlow.value = it
+            written++
+        }
         return written
     }
 
@@ -143,6 +157,13 @@ class ApiKeyManager @Inject constructor(@ApplicationContext private val context:
     override suspend fun setOllamaContextWindowSize(size: Int) {
         store.putString(OLLAMA_CONTEXT_ENTRY, size.toString(), synchronous = false)
         ollamaContextFlow.value = size
+    }
+
+    override fun getGigaChatScope(): Flow<GigaChatScope> = gigaChatScopeFlow.asStateFlow()
+
+    override suspend fun setGigaChatScope(scope: GigaChatScope) {
+        store.putString(GIGACHAT_SCOPE_ENTRY, scope.wire, synchronous = false)
+        gigaChatScopeFlow.value = scope
     }
 
     /**
@@ -205,6 +226,13 @@ class ApiKeyManager @Inject constructor(@ApplicationContext private val context:
 
         /** Entry holding the Ollama context window, the one slot that is not per provider. */
         const val OLLAMA_CONTEXT_ENTRY = "ollama_context"
+
+        /**
+         * Entry holding the GigaChat OAuth scope ([GigaChatScope.wire]) — provider-specific like
+         * [OLLAMA_CONTEXT_ENTRY], and like it not a secret. The access token the scope buys is
+         * never stored: it lives in memory only (`GigaChatTokenCache`).
+         */
+        const val GIGACHAT_SCOPE_ENTRY = "gigachat_scope"
 
         /**
          * Entry names are derived from the provider's wire id, which can never change either.

@@ -9,6 +9,7 @@ import ai.koog.prompt.executor.clients.google.GoogleClientSettings
 import ai.koog.prompt.executor.clients.openai.OpenAIClientSettings
 import ai.koog.prompt.llm.LLModel
 import androidx.annotation.VisibleForTesting
+import app.knotwork.android.data.engine.gigachat.GigaChatEndpoints
 import app.knotwork.android.data.engine.retry.RetryAfterSlot
 import app.knotwork.android.data.network.ConnectionFailureClassifier
 import app.knotwork.android.data.network.NotTheListException
@@ -41,6 +42,10 @@ import kotlin.time.Duration.Companion.milliseconds
  *   would be — with [CloudClientTimeouts.CONFIG]; for OpenAI, Anthropic, Google and DeepSeek it is
  *   sent by the client [KoogClientFactory] builds. What differs is deliberate: no retry policy (a
  *   check is one attempt) and no model requirement (the check is how a model is chosen).
+ * - **GigaChat first buys a token.** Its model list is behind OAuth: the check sends the
+ *   authorization key to the OAuth endpoint, then asks `GET /models` with the token — through the
+ *   client a run uses ([KoogClientFactory.checkClient]), so a wrong key or scope fails at the first
+ *   request with the status the endpoint gave.
  * - **No prompt, no tokens.** A provider is asked for its model list; Ollama for `/api/tags`,
  *   which is one request where Koog's own listing asks once more per model. OpenRouter answers its
  *   model list without looking at the key (measured: 200 with an invalid key, and with none), so
@@ -201,6 +206,7 @@ class KoogProviderConnectionChecker @Inject constructor(
             CloudProvider.ANTHROPIC -> AnthropicClientSettings().let { join(it.baseUrl, it.modelsPath) }
             CloudProvider.GOOGLE -> GoogleClientSettings().let { join(it.baseUrl, it.defaultPath) }
             CloudProvider.DEEPSEEK -> DeepSeekClientSettings().let { join(it.baseUrl, it.modelsPath) }
+            CloudProvider.GIGACHAT -> join(GigaChatEndpoints.API_BASE_URL, GigaChatEndpoints.MODELS_PATH)
             CloudProvider.OLLAMA -> baseUrl?.let { join(it, OLLAMA_TAGS_PATH) }
             CloudProvider.OPENROUTER, CloudProvider.GROQ, CloudProvider.OPENAI_COMPATIBLE ->
                 if (provider.usesBaseUrl && baseUrl == null) {

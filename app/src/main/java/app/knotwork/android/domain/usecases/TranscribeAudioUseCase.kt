@@ -5,6 +5,7 @@ import app.knotwork.android.domain.engine.LlmInferenceEngine
 import app.knotwork.android.domain.engine.TaskQueueManager
 import app.knotwork.android.domain.models.Result
 import app.knotwork.android.domain.models.isBusy
+import app.knotwork.android.domain.prompt.ModelTextLocalizer
 import app.knotwork.android.domain.repositories.LocalModelRepository
 import app.knotwork.android.domain.services.AudioCaptureStore
 import kotlinx.coroutines.CancellationException
@@ -43,6 +44,7 @@ class TranscribeAudioUseCase @Inject constructor(
     private val llmInferenceEngine: LlmInferenceEngine,
     private val audioCaptureStore: AudioCaptureStore,
     private val taskQueueManager: TaskQueueManager,
+    private val modelTextLocalizer: ModelTextLocalizer = ModelTextLocalizer.ENGLISH,
 ) {
 
     /**
@@ -79,7 +81,7 @@ class TranscribeAudioUseCase @Inject constructor(
                 )
                 is Result.Success -> {
                     val transcript = llmInferenceEngine
-                        .transcribe(audioPath, DefaultPrompts.AUDIO_TRANSCRIPTION_INSTRUCTION)
+                        .transcribe(audioPath, modelTextLocalizer.localize(DefaultPrompts.AUDIO_TRANSCRIPTION_INSTRUCTION))
                         .toList()
                         .joinToString(separator = "")
                         .trim()

@@ -137,7 +137,7 @@ fun ProviderDetailContent(
 
 /**
  * The provider's fields in the order a user fills them, with the test row between the last field
- * it reads and the first it feeds: address → key → *Test connection* → model.
+ * it reads and the first it feeds: address → key → option → *Test connection* → model.
  *
  * @param state Resolved fields.
  * @param callbacks Edits and actions.
@@ -158,6 +158,7 @@ private fun ProviderFields(state: ProviderDetailViewState, callbacks: ProviderDe
     }
     state.fixedAddress?.let { FixedAddress(it) }
     state.apiKey?.let { KeyField(it, callbacks.onApiKeyChange) }
+    state.option?.let { OptionField(it, callbacks.onOptionChange) }
     KnotworkTestProbeRow(state = state.test, onRun = callbacks.onTestRun, onCancel = callbacks.onTestCancel)
     ModelField(state.model, onChange = callbacks.onModelChange, onChoose = callbacks.onChooseModel)
     state.contextWindow?.let { window ->
@@ -236,6 +237,43 @@ private fun KeyField(state: ProviderKeyUi, onChange: (String) -> Unit) {
             textStyle = KnotworkTextStyles.MonoBase,
             colors = fieldColors(),
         )
+        state.hint?.let { FieldNote(text = it, tone = NoteTone.Hint) }
+    }
+}
+
+/** A fixed choice that belongs to the key, as a dropdown; the chosen label is shown, never edited. */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun OptionField(state: ProviderOptionUi, onChange: (String) -> Unit) {
+    Column {
+        FieldHeader(label = state.label)
+        var expanded by remember { mutableStateOf(false) }
+        val selected = state.choices.firstOrNull { it.id == state.selectedId }?.label.orEmpty()
+        ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = it }) {
+            OutlinedTextField(
+                value = selected,
+                onValueChange = {},
+                readOnly = true,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable)
+                    .testTag(PROVIDER_OPTION_FIELD_TEST_TAG),
+                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+                textStyle = KnotworkTextStyles.BodyBase,
+                colors = fieldColors(),
+            )
+            ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+                state.choices.forEach { choice ->
+                    DropdownMenuItem(
+                        text = { Text(choice.label, style = KnotworkTextStyles.BodyBase) },
+                        onClick = {
+                            onChange(choice.id)
+                            expanded = false
+                        },
+                    )
+                }
+            }
+        }
         state.hint?.let { FieldNote(text = it, tone = NoteTone.Hint) }
     }
 }
@@ -437,6 +475,9 @@ const val PROVIDER_ADDRESS_FIELD_TEST_TAG: String = "provider_address_field"
 
 /** Test tag of the API-key field. */
 const val PROVIDER_KEY_FIELD_TEST_TAG: String = "provider_key_field"
+
+/** Test tag of the option field (e.g. GigaChat's scope). */
+const val PROVIDER_OPTION_FIELD_TEST_TAG: String = "provider_option_field"
 
 /** Test tag of the typed model-id field. */
 const val PROVIDER_MODEL_FIELD_TEST_TAG: String = "provider_model_field"

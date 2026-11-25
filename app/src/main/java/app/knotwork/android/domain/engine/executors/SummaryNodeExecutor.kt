@@ -8,6 +8,7 @@ import app.knotwork.android.domain.models.NodeExecutionResult
 import app.knotwork.android.domain.models.NodeModel
 import app.knotwork.android.domain.models.NodeOutput
 import app.knotwork.android.domain.models.Result
+import app.knotwork.android.domain.prompt.ModelTextLocalizer
 import app.knotwork.android.domain.usecases.LoadModelUseCase
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
@@ -29,6 +30,7 @@ import javax.inject.Inject
 class SummaryNodeExecutor @Inject constructor(
     private val llmEngine: LlmInferenceEngine,
     private val loadModelUseCase: LoadModelUseCase,
+    private val modelTextLocalizer: ModelTextLocalizer = ModelTextLocalizer.ENGLISH,
 ) : NodeExecutor {
 
     override fun execute(
@@ -39,10 +41,10 @@ class SummaryNodeExecutor @Inject constructor(
         runId: String?,
         scope: ExecutionScope,
     ): Flow<NodeOutput> = flow {
-        val nodeSystemPrompt = node.systemPrompt ?: DefaultPrompts.Summary.SYSTEM_FALLBACK
+        val nodeSystemPrompt = node.systemPrompt ?: modelTextLocalizer.localize(DefaultPrompts.Summary.SYSTEM_FALLBACK)
 
         val fullPrompt = DefaultPrompts.renderTemplate(
-            DefaultPrompts.Summary.SYNTHESIS_TEMPLATE,
+            modelTextLocalizer.localize(DefaultPrompts.Summary.SYNTHESIS_TEMPLATE),
             mapOf(
                 "NODE_SYSTEM_PROMPT" to nodeSystemPrompt,
                 "ORIGINAL_TASK" to originalPrompt,

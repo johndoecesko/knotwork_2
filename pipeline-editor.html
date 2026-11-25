@@ -5625,6 +5625,7 @@
         { id: 'deepseek',  label: 'DeepSeek' },
         { id: 'openrouter', label: 'OpenRouter' },
         { id: 'groq',      label: 'Groq' },
+        { id: 'gigachat',  label: 'GigaChat' },
         { id: 'ollama',    label: 'Ollama' },
         { id: 'openai_compatible', label: 'OpenAI-compatible server' },
     ];
@@ -5785,6 +5786,7 @@
         { id: 'DEEPSEEK',   label: 'DeepSeek',   group: 'Hosted' },
         { id: 'OPENROUTER', label: 'OpenRouter', group: 'Hosted' },
         { id: 'GROQ',       label: 'Groq',       group: 'Hosted' },
+        { id: 'GIGACHAT',   label: 'GigaChat',   group: 'Hosted' },
         { id: 'OLLAMA',     label: 'Ollama',     group: 'Your own server' },
         { id: 'OPENAI_COMPATIBLE', label: 'OpenAI-compatible server', group: 'Your own server' },
     ];
@@ -5815,6 +5817,7 @@
             case 'deepseek':  return 'DEEPSEEK';
             case 'openrouter': return 'OPENROUTER';
             case 'groq':      return 'GROQ';
+            case 'gigachat':  return 'GIGACHAT';
             case 'ollama':    return 'OLLAMA';
             case 'openai_compatible': return 'OPENAI_COMPATIBLE';
             default:          return null;
@@ -5842,6 +5845,7 @@
             case 'DEEPSEEK':  return 'deepseek';
             case 'OPENROUTER': return 'openrouter';
             case 'GROQ':      return 'groq';
+            case 'GIGACHAT':  return 'gigachat';
             case 'OLLAMA':    return 'ollama';
             case 'OPENAI_COMPATIBLE': return 'openai_compatible';
             case 'AUTO':      return 'auto';

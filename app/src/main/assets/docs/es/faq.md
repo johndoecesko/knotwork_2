@@ -1,4 +1,4 @@
-<!-- translation of docs/faq.md, sha256 b52e85ec787f2d9d3adeb1a2af0f76f5f2ca991058531e2a0557ee870ad73c31 -->
+<!-- translation of docs/faq.md, sha256 20dbe5e53e6bb5716f1d88aa94b7ea7d915ce8e2be7701343ced573146098bc8 -->
 <!-- en: frequently-asked-questions -->
 # Preguntas frecuentes
 
@@ -62,8 +62,8 @@ necesita y descarga exactamente ese. Si eliges a mano, los dos modelos de la lis
 <!-- en: which-cloud-providers-are-supported -->
 ### ¿Qué proveedores en la nube se admiten?
 
-En la nube: OpenAI, Anthropic, Google Gemini, DeepSeek, OpenRouter y Groq, cada
-uno con tu propia clave. Tu propio servidor: **Ollama** o cualquier servidor
+En la nube: OpenAI, Anthropic, Google Gemini, DeepSeek, OpenRouter, Groq y
+GigaChat (Sber), cada uno con tu propia clave. Tu propio servidor: **Ollama** o cualquier servidor
 compatible con la API de OpenAI. Todos se usan solo si tú los activas. Están en
 **Configuración → Modelos → Proveedores externos**, y **Probar la conexión**, en
 la pantalla de cada proveedor, comprueba la clave y la dirección sin enviar

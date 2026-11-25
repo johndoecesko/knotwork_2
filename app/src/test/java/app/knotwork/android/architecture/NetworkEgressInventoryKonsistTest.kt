@@ -453,6 +453,14 @@ class NetworkEgressInventoryKonsistTest {
                 ),
             "$MAIN/data/engine/OpenAiCompatibleClients.kt" to
                 Egress.Opens("3.1", Indicator.RecordedBy(CHAT_CALLERS, listOf("OpenAiCompatibleClients"))),
+            // GigaChat: the app's own client, on the same transport; it also sends the
+            // authorization key to the OAuth endpoint, which PRIVACY 3.1 names.
+            "$MAIN/data/engine/gigachat/GigaChatLLMClient.kt" to
+                Egress.Opens("3.1", Indicator.RecordedBy(CHAT_CALLERS, listOf("GigaChatLLMClient"))),
+            "$MAIN/data/engine/gigachat/GigaChatMessageMapper.kt" to
+                Egress.None("translates Koog messages and tool descriptors to GigaChat JSON; no client, no call"),
+            "$MAIN/data/engine/gigachat/GigaChatModels.kt" to
+                Egress.None("builds Koog model descriptors for GigaChat ids; no client, no call"),
             "$MAIN/data/engine/retry/CloudRetryPolicy.kt" to
                 Egress.None("reads the status and the requested wait of a failed call; sends nothing"),
             "$MAIN/data/engine/KoogProviderConnectionChecker.kt" to

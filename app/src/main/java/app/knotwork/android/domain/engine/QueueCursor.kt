@@ -5,6 +5,7 @@ import app.knotwork.android.domain.engine.structured.JsonPayloadExtractor
 import app.knotwork.android.domain.models.NodeModel
 import app.knotwork.android.domain.models.PipelineGraph
 import app.knotwork.android.domain.models.RouteLabels
+import app.knotwork.android.domain.prompt.ModelTextLocalizer
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.builtins.serializer
 import kotlinx.serialization.json.Json
@@ -21,9 +22,17 @@ import timber.log.Timber
  * keeps that loop's state for one engine invocation and decides each boundary;
  * the walk only moves to where it says.
  *
+ * The labels it wraps items and results in are the app's own words to the model
+ * ([DefaultPrompts.QueueProcessor]), so they come in the language the model is
+ * addressed in.
+ *
  * @param graph The running graph, whose `Item` and `Done` edges the loop follows.
+ * @param modelTextLocalizer Puts the labels into the language the model is addressed in.
  */
-class QueueCursor(private val graph: PipelineGraph) {
+class QueueCursor(
+    private val graph: PipelineGraph,
+    private val modelTextLocalizer: ModelTextLocalizer = ModelTextLocalizer.ENGLISH,
+) {
 
     /** Items not yet run, in order; the next one is taken from the front. */
     private val remaining = mutableListOf<String>()
@@ -79,7 +88,7 @@ class QueueCursor(private val graph: PipelineGraph) {
         val itemNodeId = ports.itemNodeId
         if (remaining.isEmpty() || itemNodeId == null) {
             processorId = null
-            val summary = "Queue execution completed.\nResults:\n" +
+            val summary = text(DefaultPrompts.QueueProcessor.COMPLETED_HEADER) +
                 results.mapIndexed { i, res -> "${i + 1}. $res" }.joinToString("\n")
             return QueueStep(nodeById(ports.doneNodeId), summary)
         }
@@ -103,20 +112,29 @@ class QueueCursor(private val graph: PipelineGraph) {
      * @param error The item's error, already redacted.
      * @return Where the walk goes next.
      */
-    fun advancePastFailure(error: String): QueueStep = advance("Subtask failed: $error")
+    fun advancePastFailure(error: String): QueueStep =
+        advance(text(DefaultPrompts.QueueProcessor.SUBTASK_FAILED_PREFIX) + error)
 
     /** Takes the next item and wraps it with the results so far. */
     private fun nextItemInput(): String {
         val nextItem = remaining.removeAt(0)
-        val contextStr = results.mapIndexed { i, res -> "Result of Subtask ${i + 1}:\n$res" }.joinToString("\n\n")
-        val subtaskInstruction = DefaultPrompts.QueueProcessor.SUBTASK_INSTRUCTION
+        val resultHeader = text(DefaultPrompts.QueueProcessor.RESULT_HEADER_TEMPLATE)
+        val contextStr = results.mapIndexed { i, res ->
+            DefaultPrompts.renderTemplate(resultHeader, mapOf("INDEX" to (i + 1).toString())) + "\n$res"
+        }.joinToString("\n\n")
+        val subtaskInstruction = text(DefaultPrompts.QueueProcessor.SUBTASK_INSTRUCTION)
+        val currentHeader = text(DefaultPrompts.QueueProcessor.CURRENT_SUBTASK_HEADER)
+        val previousHeader = text(DefaultPrompts.QueueProcessor.PREVIOUS_RESULTS_HEADER)
         return if (contextStr.isNotEmpty()) {
-            "PREVIOUS RESULTS CONTEXT:\n$contextStr\n\n---\n\n$subtaskInstruction" +
-                "\n\nCURRENT SUBTASK TO EXECUTE:\n$nextItem"
+            "$previousHeader\n$contextStr\n\n---\n\n$subtaskInstruction" +
+                "\n\n$currentHeader\n$nextItem"
         } else {
-            "$subtaskInstruction\n\nCURRENT SUBTASK TO EXECUTE:\n$nextItem"
+            "$subtaskInstruction\n\n$currentHeader\n$nextItem"
         }
     }
+
+    /** [english] in the language the model is addressed in. */
+    private fun text(english: String): String = modelTextLocalizer.localize(english)
 
     /** The node at the end of a queue's `Item` and `Done` edges. */
     private fun portsOf(processorId: String): Ports {

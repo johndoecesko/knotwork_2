@@ -15,6 +15,7 @@ import app.knotwork.android.domain.models.PendingInteractionKind
 import app.knotwork.android.domain.models.Result
 import app.knotwork.android.domain.models.TriggerHitlEvent
 import app.knotwork.android.domain.models.TriggerHitlResolution
+import app.knotwork.android.domain.prompt.ModelTextLocalizer
 import app.knotwork.android.domain.repositories.ClarificationRepository
 import app.knotwork.android.domain.repositories.PendingInteractionRepository
 import app.knotwork.android.domain.services.ClarificationNotifier
@@ -74,6 +75,7 @@ class ClarificationNodeExecutor @Inject constructor(
     private val pendingInteractionRepository: PendingInteractionRepository,
     private val clarificationNotifier: ClarificationNotifier,
     private val recordTriggerHitlEvent: RecordTriggerHitlEventUseCase,
+    private val modelTextLocalizer: ModelTextLocalizer = ModelTextLocalizer.ENGLISH,
 ) : NodeExecutor {
 
     override fun execute(
@@ -104,8 +106,11 @@ class ClarificationNodeExecutor @Inject constructor(
         }
 
         val instruction = node.systemPrompt
-            ?: DefaultPrompts.CLARIFICATION_PROMPT
-        val fullPrompt = "$instruction\n\nCONTEXT FROM PREVIOUS NODE:\n$inputText\n\nRESPONSE (JSON only):\n"
+            ?: modelTextLocalizer.localize(DefaultPrompts.CLARIFICATION_PROMPT)
+        val fullPrompt = DefaultPrompts.renderTemplate(
+            modelTextLocalizer.localize(DefaultPrompts.Clarification.CONTEXT_TEMPLATE),
+            mapOf("INSTRUCTION" to instruction, "INPUT_TEXT" to inputText),
+        )
 
         val loadResult = loadModelUseCase(node.modelPath)
         if (loadResult is Result.Error) {

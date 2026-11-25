@@ -10,6 +10,7 @@ import app.knotwork.android.domain.models.NodeModel
 import app.knotwork.android.domain.models.NodeOutput
 import app.knotwork.android.domain.models.Result
 import app.knotwork.android.domain.models.Role
+import app.knotwork.android.domain.prompt.ModelTextLocalizer
 import app.knotwork.android.domain.repositories.ChatRepository
 import app.knotwork.android.domain.repositories.LocalModelRepository
 import app.knotwork.android.domain.usecases.LoadModelUseCase
@@ -50,6 +51,7 @@ class OutputNodeExecutor @Inject constructor(
     private val loadModelUseCase: LoadModelUseCase,
     private val chatRepository: ChatRepository,
     private val localModelRepository: LocalModelRepository,
+    private val modelTextLocalizer: ModelTextLocalizer = ModelTextLocalizer.ENGLISH,
 ) : NodeExecutor {
     override fun execute(
         node: NodeModel,
@@ -69,7 +71,7 @@ class OutputNodeExecutor @Inject constructor(
         val nodeSystemPrompt = node.systemPrompt
         if (!nodeSystemPrompt.isNullOrBlank()) {
             val fullPrompt = DefaultPrompts.renderTemplate(
-                DefaultPrompts.Output.FORMATTING_TEMPLATE,
+                modelTextLocalizer.localize(DefaultPrompts.Output.FORMATTING_TEMPLATE),
                 mapOf(
                     "NODE_SYSTEM_PROMPT" to nodeSystemPrompt,
                     "INPUT_TEXT" to inputText,

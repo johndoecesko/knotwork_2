@@ -29,6 +29,16 @@ data class ModelsUiState(
             "Gemma-4-E2B-it",
             "https://huggingface.co/litert-community/gemma-4-E2B-it-litert-lm/resolve/main/gemma-4-E2B-it.litertlm",
         ),
+        // Fork additions: Qwen3 has tool calling in its chat template and good
+        // Russian; int4 keeps it inside the RAM budget of a 6–8 GB phone.
+        ModelPreset(
+            "Qwen3-1.7B-int4",
+            "https://huggingface.co/litert-community/Qwen3-1.7B/resolve/main/Qwen3-1.7B_dynamic_wi4b32_afp32.litertlm",
+        ),
+        ModelPreset(
+            "Qwen3-4B-int4",
+            "https://huggingface.co/litert-community/Qwen3-4B/resolve/main/qwen3_4b_mixed_int4.litertlm",
+        ),
         // ModelPreset("Qwen3.5-0.8B", "https://huggingface.co/g-ntovas/Qwen3.5-0.8B-LiteRT/resolve/main/qwen35_mm_q8_ekv2048.litertlm"),
         // ModelPreset("Qwen3.5-2B", "https://huggingface.co/g-ntovas/Qwen3.5-2B-LiteRT/resolve/main/qwen35_2b_mm_q4_block32_ekv4096.litertlm")
     ),

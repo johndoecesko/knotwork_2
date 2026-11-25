@@ -1,5 +1,6 @@
 package app.knotwork.android.data.engine
 
+import app.knotwork.android.data.engine.gigachat.GigaChatModels
 import app.knotwork.android.domain.engine.CloudModelCatalog
 import app.knotwork.android.domain.engine.CloudModelFallback
 import app.knotwork.android.domain.engine.CloudModelInUse
@@ -9,7 +10,8 @@ import javax.inject.Singleton
 
 /**
  * Data-layer implementation of [CloudModelCatalog]: the built-in lists and defaults of
- * [KoogModelMapper], and Ollama's default.
+ * [KoogModelMapper], and the defaults of the two providers whose model is typed but that ship one —
+ * Ollama and GigaChat.
  */
 @Singleton
 class KoogCloudModelCatalog @Inject constructor() : CloudModelCatalog {
@@ -29,6 +31,8 @@ class KoogCloudModelCatalog @Inject constructor() : CloudModelCatalog {
             }
             saved != null -> CloudModelInUse(saved)
             provider == CloudProvider.OLLAMA -> CloudModelInUse(OLLAMA_DEFAULT_MODEL, CloudModelFallback.NotChosen)
+            provider == CloudProvider.GIGACHAT ->
+                CloudModelInUse(GigaChatModels.DEFAULT_MODEL_ID, CloudModelFallback.NotChosen)
             else -> null
         }
     }

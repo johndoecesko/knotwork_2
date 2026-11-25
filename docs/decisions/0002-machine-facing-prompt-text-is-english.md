@@ -50,6 +50,13 @@ A node's language is decided by its **consumer**, never by its type:
 - A preset node carrying a prompt that the table does not mention fails the
   test, so adding a node means deciding who reads it.
 
+- The decision is about the language a step **writes**, not the language it is
+  **instructed** in. In Russian the app's own prompts reach the model in Russian
+  (`ModelTextLocalizer`, `assets/model_text/<lang>.json`); a translated
+  machine-facing prompt still tells the model to write English, and keeps every
+  keyword, verdict token and JSON key in English. `ModelTextTranslationCoverageTest`
+  fails a translation that drops either.
+
 ## Status
 
 Accepted, and enforced by the bundled-preset validation test.

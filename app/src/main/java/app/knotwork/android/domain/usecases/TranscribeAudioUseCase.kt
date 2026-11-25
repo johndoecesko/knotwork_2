@@ -80,8 +80,9 @@ class TranscribeAudioUseCase @Inject constructor(
                     load.message ?: "Failed to load the model for transcription",
                 )
                 is Result.Success -> {
+                    val instruction = modelTextLocalizer.localize(DefaultPrompts.AUDIO_TRANSCRIPTION_INSTRUCTION)
                     val transcript = llmInferenceEngine
-                        .transcribe(audioPath, modelTextLocalizer.localize(DefaultPrompts.AUDIO_TRANSCRIPTION_INSTRUCTION))
+                        .transcribe(audioPath, instruction)
                         .toList()
                         .joinToString(separator = "")
                         .trim()

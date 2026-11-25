@@ -314,4 +314,12 @@
     <string name="settings_test_backend_failure_file_missing">El archivo del modelo no está en el dispositivo. Vuelve a descargarlo.</string>
     <string name="settings_test_backend_failure_load">No se pudo cargar el modelo.</string>
     <string name="settings_test_backend_failure_unknown">Error desconocido</string>
+
+    <string name="settings_gigachat_key_label">Clave de autorización de GigaChat</string>
+    <string name="settings_gigachat_key_hint">La clave de autorización de tu proyecto de GigaChat API, tal como la muestra la cuenta personal (Client ID y Client Secret en Base64). Solo se envía a ngw.devices.sberbank.ru, que devuelve un token de acceso de 30 minutos; los prompts van a api.giga.chat con ese token.</string>
+    <string name="settings_gigachat_scope_label">Versión de la API (scope)</string>
+    <string name="settings_gigachat_scope_personal">Particulares · %1$s</string>
+    <string name="settings_gigachat_scope_business_prepaid">Empresas, paquetes prepagados · %1$s</string>
+    <string name="settings_gigachat_scope_business_payg">Empresas, pago por uso · %1$s</string>
+    <string name="settings_gigachat_scope_hint">Debe ser el scope para el que se emitió tu proyecto; si no, la clave se rechaza.</string>
 </resources>

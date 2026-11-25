@@ -20,6 +20,7 @@ import app.knotwork.android.domain.models.ExecutionScope
 import app.knotwork.android.domain.models.NodeExecutionResult
 import app.knotwork.android.domain.models.NodeModel
 import app.knotwork.android.domain.models.NodeOutput
+import app.knotwork.android.domain.prompt.ModelTextLocalizer
 import app.knotwork.android.domain.repositories.ApiKeyRepository
 import app.knotwork.android.domain.repositories.GenerationSettings
 import app.knotwork.android.domain.repositories.MetricsRepository
@@ -64,6 +65,7 @@ class CloudLlmNodeExecutor @Inject constructor(
     private val cloudLlmClientFactory: CloudLlmClientFactory,
     private val cloudLlmModelResolver: CloudLlmModelResolver,
     private val networkActivityTracker: NetworkActivityTracker,
+    private val modelTextLocalizer: ModelTextLocalizer = ModelTextLocalizer.ENGLISH,
 ) : NodeExecutor {
 
     override fun execute(
@@ -74,8 +76,9 @@ class CloudLlmNodeExecutor @Inject constructor(
         runId: String?,
         scope: ExecutionScope,
     ): Flow<NodeOutput> = channelFlow {
-        val systemPromptPrefix = generationSettings.systemPromptPrefix.first()
-        val nodeSystemPrompt = node.systemPrompt ?: DefaultPrompts.Cloud.SYSTEM_FALLBACK
+        // The prefix is the user's setting; only its untouched default has a translation.
+        val systemPromptPrefix = modelTextLocalizer.localize(generationSettings.systemPromptPrefix.first())
+        val nodeSystemPrompt = node.systemPrompt ?: modelTextLocalizer.localize(DefaultPrompts.Cloud.SYSTEM_FALLBACK)
         val baseSystemPrompt = "$systemPromptPrefix\n$nodeSystemPrompt\n"
 
         // `inputText` is the assembled context produced upstream by NodeContextBuilder

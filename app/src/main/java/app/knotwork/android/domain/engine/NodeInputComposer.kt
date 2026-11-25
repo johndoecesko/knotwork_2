@@ -10,6 +10,7 @@ import app.knotwork.android.domain.models.Role
 import app.knotwork.android.domain.models.RunTreeContext
 import app.knotwork.android.domain.models.ToolInvocationResult
 import app.knotwork.android.domain.models.usesContextConfig
+import app.knotwork.android.domain.prompt.ModelTextLocalizer
 import app.knotwork.android.domain.prompt.PromptTemplateEngine
 import app.knotwork.android.domain.prompt.PromptVariableProvider
 import app.knotwork.android.domain.repositories.ChatRepository
@@ -47,6 +48,9 @@ class NodeInputComposer private constructor(
     private val tree: RunTreeContext,
     memorySnapshot: List<MemoryChunk>?,
 ) {
+
+    /** Puts the app's own words to the model into the language the model is addressed in. */
+    val modelTextLocalizer: ModelTextLocalizer get() = sources.modelTextLocalizer
 
     /** Memory retrieved for this run, or the interrupted run's snapshot; `null` until a node needs it. */
     private var memories: List<MemoryChunk>? = memorySnapshot
@@ -127,10 +131,13 @@ class NodeInputComposer private constructor(
      * accidental substitution inside fields that happen to share the syntax.
      */
     private suspend fun renderSystemPrompt(node: NodeModel): NodeModel {
-        val rawPrompt = node.systemPrompt
-        if (rawPrompt.isNullOrEmpty() || node.type !in LLM_NODE_TYPES) return node
+        val storedPrompt = node.systemPrompt
+        if (storedPrompt.isNullOrEmpty() || node.type !in LLM_NODE_TYPES) return node
+        // A prompt the app or a bundled preset wrote is put into the language the model
+        // is addressed in before it is rendered; a prompt the user wrote is left as is.
+        val rawPrompt = sources.modelTextLocalizer.localize(storedPrompt)
         val rendered = sources.promptTemplateEngine.render(rawPrompt, sources.promptVariableProviders.toList())
-        if (rendered === rawPrompt || rendered == rawPrompt) return node
+        if (rendered === storedPrompt || rendered == storedPrompt) return node
         return node.copy(systemPrompt = rendered)
     }
 
@@ -197,9 +204,16 @@ class NodeInputComposer private constructor(
         // of the same defect — the first two were writing the note to the carried
         // text, and letting it survive an `INTENT_ROUTER` — and it is why the
         // exclusion is on the node type rather than on the executor.
-        val notes = if (node.type == NodeType.OUTPUT) null else tree.contextNotes.drain()
+        val notes = if (node.type == NodeType.OUTPUT) null else tree.contextNotes.drain()?.let(::localizeNotes)
         return if (notes != null) "$notes\n\n$composed" else composed
     }
+
+    /**
+     * The drained advice in the language the model is addressed in. Each note is one
+     * paragraph the engine wrote, joined by a blank line, so each is looked up on its own.
+     */
+    private fun localizeNotes(notes: String): String =
+        notes.split(NOTE_SEPARATOR).joinToString(NOTE_SEPARATOR) { sources.modelTextLocalizer.localize(it) }
 
     /**
      * Long-term memory for this run, retrieved at most once.
@@ -397,6 +411,8 @@ class NodeInputComposer private constructor(
      * @property chatHistoryWindowPlanner Decides which messages a node replays.
      * @property retrieveRelevantMemoryUseCase Long-term memory search.
      * @property memoryRepository Records which memories a run used.
+     * @property modelTextLocalizer Puts the app's own prompts and notes into the language
+     *   the model is addressed in; English unless bound otherwise.
      */
     @Singleton
     class Factory @Inject constructor(
@@ -409,6 +425,7 @@ class NodeInputComposer private constructor(
         internal val chatHistoryWindowPlanner: ChatHistoryWindowPlanner,
         internal val retrieveRelevantMemoryUseCase: RetrieveRelevantMemoryUseCase,
         internal val memoryRepository: MemoryRepository,
+        internal val modelTextLocalizer: ModelTextLocalizer = ModelTextLocalizer.ENGLISH,
     ) {
         /**
          * Opens the composer of one invocation.
@@ -435,6 +452,9 @@ class NodeInputComposer private constructor(
     }
 
     private companion object {
+        /** How `RunContextNotes` joins its notes. */
+        const val NOTE_SEPARATOR = "\n\n"
+
         /**
          * Node types whose `systemPrompt` is forwarded to an LLM engine and
          * therefore needs `$VARIABLE` placeholders resolved before execution.

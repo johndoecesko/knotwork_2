@@ -89,6 +89,7 @@ internal object CloudProviderMapper {
         CatalogCloudProvider.DEEPSEEK -> DomainCloudProvider.DEEPSEEK
         CatalogCloudProvider.OPENROUTER -> DomainCloudProvider.OPENROUTER
         CatalogCloudProvider.GROQ -> DomainCloudProvider.GROQ
+        CatalogCloudProvider.GIGACHAT -> DomainCloudProvider.GIGACHAT
         CatalogCloudProvider.OLLAMA -> DomainCloudProvider.OLLAMA
         CatalogCloudProvider.OPENAI_COMPATIBLE -> DomainCloudProvider.OPENAI_COMPATIBLE
     }
@@ -141,6 +142,7 @@ internal object CloudProviderMapper {
         DomainCloudProvider.DEEPSEEK -> CatalogCloudProvider.DEEPSEEK
         DomainCloudProvider.OPENROUTER -> CatalogCloudProvider.OPENROUTER
         DomainCloudProvider.GROQ -> CatalogCloudProvider.GROQ
+        DomainCloudProvider.GIGACHAT -> CatalogCloudProvider.GIGACHAT
         DomainCloudProvider.OLLAMA -> CatalogCloudProvider.OLLAMA
         DomainCloudProvider.OPENAI_COMPATIBLE -> CatalogCloudProvider.OPENAI_COMPATIBLE
         null -> CatalogCloudProvider.OPEN_AI

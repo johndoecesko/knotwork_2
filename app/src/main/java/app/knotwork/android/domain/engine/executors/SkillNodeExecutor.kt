@@ -8,6 +8,7 @@ import app.knotwork.android.domain.models.NodeOutput
 import app.knotwork.android.domain.models.NodeType
 import app.knotwork.android.domain.models.Skill
 import app.knotwork.android.domain.prompt.ChatTranscript
+import app.knotwork.android.domain.prompt.ModelTextLocalizer
 import app.knotwork.android.domain.prompt.PromptTemplateEngine
 import app.knotwork.android.domain.prompt.PromptVariableProvider
 import app.knotwork.android.domain.repositories.SkillRepository
@@ -56,6 +57,7 @@ class SkillNodeExecutor @Inject constructor(
     private val liteRtNodeExecutor: LiteRtNodeExecutor,
     private val cloudLlmNodeExecutor: CloudLlmNodeExecutor,
     private val toolInvocationGate: ToolInvocationGate,
+    private val modelTextLocalizer: ModelTextLocalizer = ModelTextLocalizer.ENGLISH,
 ) : NodeExecutor {
 
     override fun execute(
@@ -87,7 +89,9 @@ class SkillNodeExecutor @Inject constructor(
 
         // Render the skill's instruction with `$TOOLS` scoped to the skill's
         // allowlist; every other built-in variable resolves as usual.
-        val renderedInstruction = promptTemplateEngine.render(skill.instruction, scopedProviders(skill))
+        // A bundled skill's untouched instruction has a translation; one the user wrote does not.
+        val renderedInstruction =
+            promptTemplateEngine.render(modelTextLocalizer.localize(skill.instruction), scopedProviders(skill))
 
         // Delegate the actual inference to the existing engine executors via a
         // derived node whose already-rendered instruction is its system prompt.
@@ -177,7 +181,7 @@ class SkillNodeExecutor @Inject constructor(
      */
     private fun scopedProviders(skill: Skill): List<PromptVariableProvider> {
         val withoutTools = promptVariableProviders.filterNot { it.key() == TOOLS_KEY }
-        return withoutTools + ScopedToolsVariableProvider(toolRepository, skill.toolAllowlist)
+        return withoutTools + ScopedToolsVariableProvider(toolRepository, skill.toolAllowlist, modelTextLocalizer)
     }
 
     /**
@@ -208,10 +212,13 @@ class SkillNodeExecutor @Inject constructor(
  *
  * @property toolRepository source of the currently available tools.
  * @property allowlist the skill's tri-state tool allowlist.
+ * @property modelTextLocalizer puts a built-in tool's description into the language
+ *   the model is addressed in.
  */
 private class ScopedToolsVariableProvider(
     private val toolRepository: ToolRepository,
     private val allowlist: List<String>?,
+    private val modelTextLocalizer: ModelTextLocalizer,
 ) : PromptVariableProvider {
 
     override fun key(): String = "TOOLS"
@@ -221,7 +228,7 @@ private class ScopedToolsVariableProvider(
         val visible = if (allowlist == null) available else available.filter { it.name in allowlist }
         if (visible.isEmpty()) return ""
         return visible.joinToString(separator = "\n") { tool ->
-            ChatTranscript.entry("${tool.name} — ", tool.description)
+            ChatTranscript.entry("${tool.name} — ", modelTextLocalizer.localize(tool.description))
         }
     }
 }

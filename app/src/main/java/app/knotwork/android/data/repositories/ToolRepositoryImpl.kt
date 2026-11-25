@@ -65,20 +65,8 @@ class ToolRepositoryImpl @Inject constructor(
 
         val scheduleTool = AgentTool(
             name = "schedule_task",
-            description = "Schedules a task to be executed by the agent in the background. " +
-                "intervalHours: >0 for periodic, 0 for one-time. " +
-                "delayMinutes: >0 for delayed execution.",
-            parameters = """
-                {
-                  "type": "object",
-                  "properties": {
-                    "prompt": { "type": "string", "description": "The prompt or task description" },
-                    "intervalHours": { "type": "integer", "description": "Interval in hours for periodic tasks. Default 0." },
-                    "delayMinutes": { "type": "integer", "description": "Delay in minutes for one-time tasks. Default 0." }
-                  },
-                  "required": ["prompt"]
-                }
-            """.trimIndent(),
+            description = SCHEDULE_TASK_DESCRIPTION,
+            parameters = SCHEDULE_TASK_PARAMETERS,
             risk = ToolRisk.SENSITIVE,
         )
 
@@ -150,8 +138,7 @@ class ToolRepositoryImpl @Inject constructor(
         val defaultModel = availableModels.first().id
         val delegateTool = AgentTool(
             name = "delegate_task",
-            description = "Delegates a complex or specialized task to an external LLM and returns its " +
-                "answer. ONLY use this tool if you need cloud reasoning.",
+            description = DELEGATE_TASK_DESCRIPTION,
             parameters = """
                 {
                   "type": "object",
@@ -566,5 +553,38 @@ class ToolRepositoryImpl @Inject constructor(
             return ToolRisk.DESTRUCTIVE
         }
         return HttpRequestPolicy.methodRisk(method) ?: ToolRisk.DESTRUCTIVE
+    }
+
+    /**
+     * The built-in tools' own descriptions, in English. A model meets them in the
+     * language it is addressed in: `assets/model_text/<language>.json` holds their
+     * translations, applied where the tool list is written into a prompt.
+     */
+    internal companion object {
+        /** Description of `schedule_task`. */
+        const val SCHEDULE_TASK_DESCRIPTION: String =
+            "Schedules a task to be executed by the agent in the background. " +
+                "intervalHours: >0 for periodic, 0 for one-time. " +
+                "delayMinutes: >0 for delayed execution."
+
+        /** Parameter schema of `schedule_task`. */
+        val SCHEDULE_TASK_PARAMETERS: String = """
+            {
+              "type": "object",
+              "properties": {
+                "prompt": { "type": "string", "description": "The prompt or task description" },
+                "intervalHours": { "type": "integer", "description": "Interval in hours for periodic tasks. Default 0." },
+                "delayMinutes": { "type": "integer", "description": "Delay in minutes for one-time tasks. Default 0." }
+              },
+              "required": ["prompt"]
+            }
+        """.trimIndent()
+
+        /**
+         * Description of `delegate_task`. Its parameter schema names the providers set
+         * up on this device, so it is built per call and has no translation.
+         */
+        const val DELEGATE_TASK_DESCRIPTION: String = "Delegates a complex or specialized task to an external LLM " +
+            "and returns its answer. ONLY use this tool if you need cloud reasoning."
     }
 }

@@ -3,6 +3,7 @@ package app.knotwork.android.data.engine
 import ai.koog.prompt.llm.LLMCapability
 import ai.koog.prompt.llm.LLMProvider
 import ai.koog.prompt.llm.LLModel
+import app.knotwork.android.data.engine.gigachat.GigaChatModels
 import app.knotwork.android.domain.engine.CloudLlmModelResolver
 import app.knotwork.android.domain.engine.CloudModelCatalog
 import app.knotwork.android.domain.models.CloudProvider
@@ -48,6 +49,9 @@ class KoogCloudLlmModelResolver @Inject constructor(
             // (`MissingModel`), so reaching here without one means it was cleared in between.
             CloudProvider.OPENROUTER, CloudProvider.GROQ, CloudProvider.OPENAI_COMPATIBLE ->
                 openAiCompatibleModel(checkNotNull(inUse) { "No model is selected for '${provider.id}'" }.id)
+            // Typed like Ollama's, with a default; sent by the app's own client (GigaChatLLMClient).
+            CloudProvider.GIGACHAT ->
+                GigaChatModels.chat(checkNotNull(inUse) { "No default model for '${provider.id}'" }.id)
         }
     }
 

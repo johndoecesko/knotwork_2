@@ -18,7 +18,10 @@ class CloudStreamEndTest {
     fun `given a stream without a finish reason when checked then only the measured providers call it cut off`() {
         val cut = CloudProvider.entries.filter { CloudStreamEnd.cutOff(it, CHAT_MODEL, finishReason = null) }.toSet()
 
-        assertEquals(setOf(CloudProvider.OPENAI, CloudProvider.DEEPSEEK, CloudProvider.GOOGLE), cut)
+        assertEquals(
+            setOf(CloudProvider.OPENAI, CloudProvider.DEEPSEEK, CloudProvider.GOOGLE, CloudProvider.GIGACHAT),
+            cut,
+        )
     }
 
     @Test

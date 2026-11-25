@@ -30,6 +30,20 @@
 
     The platform no longer blocks a cleartext redirect anywhere; inside the
     third-party Koog / Ktor stacks the app's own transport check does.
+
+    GigaChat (Sber) is the one exception to "system trust anchors only". Its
+    OAuth endpoint (ngw.devices.sberbank.ru) and API (api.giga.chat, and the
+    legacy gigachat.devices.sberbank.ru) present certificates issued under the
+    "Russian Trusted Root CA" of the Ministry of Digital Development (НУЦ
+    Минцифры), which Android does not ship. That root — and its 2024 "Russian
+    Trusted Sub CA", for a server that omits the intermediate — is trusted for
+    those hosts ONLY, in the domain-config below: it never becomes a trust
+    anchor for any other host the app reaches. The certificates in res/raw
+    (PEM text; named .crt because .gitignore refuses *.pem) match the
+    fingerprints Sber publishes (Root CA SHA-256 D2:6D:2D:02:31:B7:C3:9F:
+    92:CC:73:85:12:BA:54:10:35:19:E4:40:5D:68:B5:BD:70:3E:97:88:CA:8E:CF:31,
+    valid to 2032-02-27; Sub CA 2024 valid to 2029-07-19); replace them from
+    gu-st.ru / gosuslugi.ru/crt when Минцифры reissues either.
 -->
 <network-security-config xmlns:tools="http://schemas.android.com/tools">
     <!--
@@ -44,4 +58,19 @@
             <certificates src="system" />
         </trust-anchors>
     </base-config>
+    <!--
+        GigaChat only. A domain-config replaces the trust anchors of base-config for
+        the domains it names, so the system store is listed again; cleartext is off,
+        since every GigaChat endpoint is https.
+    -->
+    <domain-config cleartextTrafficPermitted="false">
+        <!-- ngw.devices.sberbank.ru (OAuth), gigachat.devices.sberbank.ru (legacy API) -->
+        <domain includeSubdomains="true">devices.sberbank.ru</domain>
+        <domain includeSubdomains="false">api.giga.chat</domain>
+        <trust-anchors>
+            <certificates src="system" />
+            <certificates src="@raw/russian_trusted_root_ca" />
+            <certificates src="@raw/russian_trusted_sub_ca_2024" />
+        </trust-anchors>
+    </domain-config>
 </network-security-config>

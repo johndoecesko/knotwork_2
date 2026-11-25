@@ -640,8 +640,8 @@ Add a constant to
 [`domain/models/CloudProvider.kt`](../app/src/main/java/app/knotwork/android/domain/models/CloudProvider.kt)
 with a stable wire-id (the lowercase string used in pipeline JSON,
 e.g. `"mistral"`). Existing values are
-`OPENAI`, `ANTHROPIC`, `GOOGLE`, `DEEPSEEK`, `OPENROUTER`, `GROQ`, `OLLAMA`,
-`OPENAI_COMPATIBLE`.
+`OPENAI`, `ANTHROPIC`, `GOOGLE`, `DEEPSEEK`, `OPENROUTER`, `GROQ`, `GIGACHAT`,
+`OLLAMA`, `OPENAI_COMPATIBLE`.
 
 The constant also declares how the provider is reached: `usesApiKey` (a key
 the user saves), `usesBaseUrl` (a server address the user enters, as for
@@ -676,6 +676,20 @@ needs no new Koog module: add it to
 as OpenRouter and Groq are. Build the client on the `http` factory the
 factory passes in: that transport checks every hop, redirects included,
 and records `Retry-After` for the retry policy.
+
+A provider neither Koog nor its OpenAI client can reach gets a client of
+the app's own that extends Koog's `LLMClient`, as GigaChat does
+([`data/engine/gigachat/`](../app/src/main/java/app/knotwork/android/data/engine/gigachat/)):
+its authentication is OAuth with a token that expires every 30 minutes, and
+its function calling is `functions`/`function_call`, not `tools`. Such a
+client still runs on the `http` factory, with `CloudClientTimeouts.CONFIG`,
+reports HTTP failures as Koog's `KoogHttpClientException` (the retry policy
+reads its status), and keeps any credential it derives — an access token —
+in a `@Singleton` outside the client, because the factory builds a fresh
+client per call. Add it to `NetworkEgressInventoryKonsistTest`. A host whose
+certificate does not chain to Android's system store needs a
+`<domain-config>` in `res/xml/network_security_config.xml` naming that host
+only, never a change to `base-config`.
 
 ### 3.3. Teach the model resolver
 

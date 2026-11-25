@@ -6,6 +6,7 @@ import app.knotwork.android.domain.engine.LlmInferenceEngine
 import app.knotwork.android.domain.models.MemoryChunk
 import app.knotwork.android.domain.models.MemorySource
 import app.knotwork.android.domain.models.Result
+import app.knotwork.android.domain.prompt.ModelTextLocalizer
 import app.knotwork.android.domain.prompt.PromptTemplateEngine
 import app.knotwork.android.domain.prompt.PromptVariableProvider
 import app.knotwork.android.domain.repositories.MemoryRepository
@@ -89,6 +90,7 @@ class MemoryCompactionUseCase @Inject constructor(
     private val memorySettings: MemorySettings,
     private val kMeansClusterer: KMeansClusterer,
     private val coverageVerifier: CompactionCoverageVerifier,
+    private val modelTextLocalizer: ModelTextLocalizer = ModelTextLocalizer.ENGLISH,
 ) {
 
     /**
@@ -118,7 +120,7 @@ class MemoryCompactionUseCase @Inject constructor(
 
             val clusters = kMeansClusterer.cluster(candidates.map { it.embedding })
             val systemPrompt = promptTemplateEngine.render(
-                DefaultPrompts.MemoryCompaction.SYSTEM_FALLBACK,
+                modelTextLocalizer.localize(DefaultPrompts.MemoryCompaction.SYSTEM_FALLBACK),
                 promptVariableProviders.toList(),
             )
 

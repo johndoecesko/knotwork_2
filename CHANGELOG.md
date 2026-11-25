@@ -13,6 +13,29 @@ details.
 
 ## [Unreleased]
 
+### Added
+
+- **GigaChat (Sber) as a cloud provider.** Settings → Models → External
+  providers → **GigaChat** takes the project's **authorization key** and the
+  **API version (scope)** it was issued for — individuals
+  (`GIGACHAT_API_PERS`), businesses on prepaid packages (`GIGACHAT_API_B2B`) or
+  pay-as-you-go (`GIGACHAT_API_CORP`). The app exchanges the key at
+  `ngw.devices.sberbank.ru` for a 30-minute access token, kept in memory only
+  and renewed a minute before it expires, and sends prompts to
+  `api.giga.chat`. The model is typed or chosen from the account's list after
+  **Test connection**; with none chosen, runs use `GigaChat-2`. A Cloud node,
+  a structured step's engine and `delegate_task` can all use it; **Auto** does
+  not pick it. The browser editor knows the `gigachat` id.
+- **The Russian Trusted Root CA is trusted for GigaChat's hosts only.** Sber's
+  servers present certificates of the Ministry of Digital Development's CA,
+  which Android does not ship. The app trusts it (and its 2024 sub-CA) for
+  `*.devices.sberbank.ru` and `api.giga.chat` and for no other host.
+
+### Changed
+
+- **Provider errors never show a `Basic` credential.** Error text is scrubbed
+  of `Authorization: Basic …` as it already was of `Bearer` tokens.
+
 ## [0.15.0] - 2026-11-15
 
 ### Changed

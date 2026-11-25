@@ -22,6 +22,14 @@ import app.knotwork.android.domain.models.NodeType
  *    reserved for runtime-resolved variables (`${'$'}DATE`, `${'$'}TOOLS`, …) that
  *    apply to user-authored prompts.
  *
+ * **Every text here is written in English and is the source of its translations.**
+ * The model meets it through
+ * [app.knotwork.android.domain.prompt.ModelTextLocalizer], which swaps the exact
+ * English for its translation in the language the model is addressed in
+ * (`assets/model_text/<language>.json`) — so a text changed here must have its
+ * translations changed with it, or it runs in English (`ModelTextTranslationCoverageTest`
+ * fails the build first). Callers localize a text **before** rendering it.
+ *
  * The historical flat constants (`SYSTEM_PROMPT_PREFIX`, `INTENT_ROUTER_PROMPT`,
  * etc.) are kept in place because they are still consumed by
  * `DefaultPipelineFactory`, `ClarificationNodeExecutor`, and the browser-side
@@ -344,10 +352,29 @@ object DefaultPrompts {
     object Clarification {
         /** @see DefaultPrompts.CLARIFICATION_PROMPT */
         const val SYSTEM_FALLBACK = CLARIFICATION_PROMPT
+
+        /**
+         * Wrap-template the CLARIFICATION executor sends to the LLM.
+         *
+         * Placeholders (literal `${'$'}KEY`, substituted via [renderTemplate]):
+         *  - `${'$'}INSTRUCTION` — the node's (or the fallback) clarification instruction.
+         *  - `${'$'}INPUT_TEXT` — the upstream context.
+         */
+        const val CONTEXT_TEMPLATE =
+            "\$INSTRUCTION\n\nCONTEXT FROM PREVIOUS NODE:\n\$INPUT_TEXT\n\nRESPONSE (JSON only):\n"
     }
 
     /** Prompts for [NodeType.TOOL] nodes — internal (not user-customisable) wrap-templates. */
     object Tool {
+        /** Opens one tool's entry in the `${'$'}AVAILABLE_TOOLS` list; the tool's name follows. */
+        const val CATALOG_TOOL_LABEL = "Tool: "
+
+        /** Opens the tool's description in its `${'$'}AVAILABLE_TOOLS` entry. */
+        const val CATALOG_DESCRIPTION_LABEL = "Description: "
+
+        /** Opens the tool's parameter schema in its `${'$'}AVAILABLE_TOOLS` entry. */
+        const val CATALOG_PARAMETERS_LABEL = "Parameters: "
+
         /**
          * Sent to the local LLM when the TOOL node is configured with `auto`
          * tool selection.
@@ -658,6 +685,21 @@ object DefaultPrompts {
         const val SUBTASK_INSTRUCTION = "CRITICAL INSTRUCTION: You are executing a single subtask within a larger " +
             "workflow. Focus ONLY on this specific subtask. Do NOT provide conversational filler, and do NOT attempt " +
             "to solve the overall task or future steps."
+
+        /** Heads the results of the items run so far, in each next item's input. */
+        const val PREVIOUS_RESULTS_HEADER = "PREVIOUS RESULTS CONTEXT:"
+
+        /** Heads one earlier item's result; `${'$'}INDEX` is its 1-based position. */
+        const val RESULT_HEADER_TEMPLATE = "Result of Subtask \$INDEX:"
+
+        /** Heads the item to run now. */
+        const val CURRENT_SUBTASK_HEADER = "CURRENT SUBTASK TO EXECUTE:"
+
+        /** Opens the result of an item that failed under `stopOnError = false`; the error follows. */
+        const val SUBTASK_FAILED_PREFIX = "Subtask failed: "
+
+        /** Opens the summary the loop leaves by its `Done` edge with; the numbered results follow. */
+        const val COMPLETED_HEADER = "Queue execution completed.\nResults:\n"
     }
 
     /**
@@ -687,16 +729,58 @@ object DefaultPrompts {
          * @param originalPrompt The prompt whose output failed validation.
          * @param previousOutput The model's last invalid output, included verbatim.
          * @param error The validation error explaining why it was rejected.
+         * @param template [REPAIR_TEMPLATE], or its translation into the language the
+         *   model is addressed in.
          * @return The fully-substituted repair prompt.
          */
-        fun repairPrompt(originalPrompt: String, previousOutput: String, error: String): String = renderTemplate(
-            REPAIR_TEMPLATE,
+        fun repairPrompt(
+            originalPrompt: String,
+            previousOutput: String,
+            error: String,
+            template: String = REPAIR_TEMPLATE,
+        ): String = renderTemplate(
+            template,
             mapOf(
                 "ORIGINAL_PROMPT" to originalPrompt,
                 "PREVIOUS_OUTPUT" to previousOutput,
                 "ERROR" to error,
             ),
         )
+    }
+
+    /**
+     * The headers of the context blocks
+     * [app.knotwork.android.domain.engine.NodeContextBuilder] composes a node's input
+     * from, and the note it leaves where it cut a tool result. Kept here, beside the
+     * prompts, because the model reads them — and prompts refer to them by name.
+     */
+    object ContextBlocks {
+        /** Header of the user message that started the run. */
+        const val HEADER_ORIGINAL_TASK = "--- Original Task ---"
+
+        /** Header of the summary standing in for the history older than the live window. */
+        const val HEADER_EARLIER_SUMMARY = "--- Earlier conversation (summarized) ---"
+
+        /** Header of the replayed chat history. */
+        const val HEADER_CHAT_HISTORY = "--- Chat History ---"
+
+        /** Header of the retrieved long-term memories. */
+        const val HEADER_LONG_TERM_MEMORY = "--- Long-Term Memory ---"
+
+        /** Header of this run's tool results. */
+        const val HEADER_TOOL_RESULTS = "--- Tool Results ---"
+
+        /** Header of the predecessor's output. */
+        const val HEADER_PREVIOUS_NODE_OUTPUT = "--- Previous Node Output ---"
+
+        /**
+         * Appended where a tool result was cut to the tool-text budget.
+         *
+         * Placeholder (literal `${'$'}KEY`, substituted via [renderTemplate]):
+         *  - `${'$'}COUNT` — how many characters were left out.
+         */
+        const val TOOL_RESULT_CUT_NOTE_TEMPLATE =
+            "\n[... \$COUNT more characters of this tool result were cut to fit the on-device model's context]"
     }
 
     /**

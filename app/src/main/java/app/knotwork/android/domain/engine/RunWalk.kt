@@ -61,7 +61,7 @@ class RunWalk(
 ) {
 
     /** The QUEUE_PROCESSOR loop the walk is in, if any. */
-    private val queue = QueueCursor(graph)
+    private val queue = QueueCursor(graph, inputs.modelTextLocalizer)
 
     /** Every non-INPUT/OUTPUT step so far, re-emitted whole for the console's Traces tab. */
     private val traceSteps = mutableListOf<AgentOrchestratorState.TraceStep>()
@@ -580,7 +580,8 @@ class RunWalk(
         data class Stopped(val reason: RunTerminationReason) : CeilingCheck
     }
 
-    private companion object {
+    /** The advice injected when the stuck-detector first fires. */
+    internal companion object {
         /**
          * Injected into the run's own context the first time the stuck-detector
          * decides the run is going in circles, so the model gets a chance to break
@@ -591,6 +592,9 @@ class RunWalk(
          * Names the observation rather than the machinery. "You have produced this
          * before" is something a model can act on; the signal name and the
          * repetition count are for the console, where an engineer reads them.
+         *
+         * Written in English; `NodeInputComposer` hands it to the model in the
+         * language the model is addressed in (`assets/model_text/<language>.json`).
          */
         const val STUCK_CONTEXT_NOTE: String =
             "SYSTEM NOTICE: this run appears to be repeating itself — the same work has produced the " +

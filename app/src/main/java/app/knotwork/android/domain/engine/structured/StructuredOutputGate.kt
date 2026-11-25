@@ -1,6 +1,7 @@
 package app.knotwork.android.domain.engine.structured
 
 import app.knotwork.android.domain.constants.DefaultPrompts
+import app.knotwork.android.domain.prompt.ModelTextLocalizer
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.json.Json
 import javax.inject.Inject
@@ -26,7 +27,15 @@ import javax.inject.Singleton
  * [RepairListener].
  */
 @Singleton
-class StructuredOutputGate @Inject constructor() {
+class StructuredOutputGate @Inject constructor(private val modelTextLocalizer: ModelTextLocalizer) {
+
+    /**
+     * English-only instance for tests and callers outside Hilt. Kept as a
+     * secondary constructor rather than a default argument: a default on the
+     * only parameter makes Kotlin emit a second, also `@Inject`-annotated,
+     * no-arg constructor, which Dagger rejects.
+     */
+    constructor() : this(ModelTextLocalizer.ENGLISH)
 
     /**
      * Lenient JSON reader shared by every [runJson] call. `ignoreUnknownKeys`
@@ -180,6 +189,7 @@ class StructuredOutputGate @Inject constructor() {
                         originalPrompt = originalPrompt,
                         previousOutput = raw,
                         error = outcome.error,
+                        template = modelTextLocalizer.localize(DefaultPrompts.StructuredOutput.REPAIR_TEMPLATE),
                     )
                     temperature = REPAIR_TEMPERATURE
                 }

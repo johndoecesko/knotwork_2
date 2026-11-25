@@ -189,13 +189,26 @@ on, which sets where words may live:
   stored as written, in the language of the moment.
 - A ViewModel outlives the re-creation, so it hands its screen a resource
   id or a typed value, and the screen resolves it.
-- What a model reads — system prompts, tool descriptions, tool results —
-  stays in English.
+- What the app itself writes for a model — default and fallback system
+  prompts, wrap-templates, context headers, built-in tool descriptions, and
+  the prompts of the bundled pipelines, templates and skills — is written in
+  English and reaches the model in the interface language through
+  `ModelTextLocalizer` (`domain/prompt`, bound to `BundledModelTextLocalizer`
+  in `data/prompt`), from `assets/model_text/<lang>.json`. A translation
+  applies only to the exact English it was written for, at the moment the
+  prompt is composed: a stored pipeline keeps its English, a prompt the user
+  wrote or edited is never touched, and switching the language back switches
+  the prompts back. Tool results, a server's or another app's tool
+  descriptions, and the literals the code compares against (routing keywords,
+  verdict tokens, JSON keys, tool names) stay as they are, and a
+  machine-facing step still writes English ([decisions 0002](decisions/0002-machine-facing-prompt-text-is-english.md)).
 
 Two kinds of text live outside string resources. A bundled preset keeps
 its English JSON; `domain/presetl10n` lays over it the translation from
 `assets/presets/l10n/<lang>.json`, and applies each text only to the
-English it was written for. The FAQ and the troubleshooting guide have a
+English it was written for; their prompts are translated separately, in
+`assets/model_text/<lang>.json`, and only on their way to the model. The FAQ
+and the troubleshooting guide have a
 translated copy in `assets/docs/<lang>/`, each with its own heading index.
 
 The rules are in [code-style.md](code-style.md#interface-text).
@@ -1361,8 +1374,14 @@ send-time check then refuses.
 ### 4.4. Cloud LLM providers
 
 Cloud providers (`openai`, `anthropic`, `google`, `deepseek`, `openrouter`,
-`groq`, `ollama`, `openai_compatible`) implement the `CloudLlmProvider` interface
-in `domain`. OpenRouter, Groq and a server the user runs are Koog's own OpenAI
+`groq`, `gigachat`, `ollama`, `openai_compatible`) implement the `CloudLlmProvider` interface
+in `domain`. GigaChat is the one provider Koog has no client for: the app's own
+`data/engine/gigachat/GigaChatLLMClient` implements Koog's `LLMClient` on the same
+transport (`KoogTransportFactory`, hop rule and `Retry-After` included), buys an
+OAuth access token with the saved authorization key and scope, keeps it in the
+process-wide `GigaChatTokenCache` (memory only, refreshed a minute before expiry,
+one fetch at a time under a `Mutex`), repeats a request once after a 401 with a
+new token, and maps Koog tools to GigaChat `functions` (`GigaChatMessageMapper`). OpenRouter, Groq and a server the user runs are Koog's own OpenAI
 client with other settings (`data/engine/OpenAiCompatibleClients`): OpenRouter and
 Groq at fixed addresses, the user's server at the address they enter (with `/v1`,
 paths relative to it), and without an `Authorization` header when it has no key.

@@ -56,6 +56,14 @@ object CloudStreamEnd {
      * - `OPENROUTER` / `GROQ` / `OPENAI_COMPATIBLE` — **excluded pending measurement**. The
      *   stream parser is OpenAI's, but the signal is the server's: a server that omits the
      *   finish reason would have every healthy answer discarded as cut off.
+     * - `GIGACHAT` — **checked, by construction of the app's own client**
+     *   (`GigaChatLLMClient`). The GigaChat API documents `finish_reason` on the last chunk of
+     *   every stream (`stop`, `length`, `function_call`, `blacklist`, `error`) followed by
+     *   `data: [DONE]`; the client copies it into `End` (or `stop` when only `[DONE]` came) and
+     *   emits `End(finishReason = null)` only when the stream stopped before either arrived.
+     *   `GigaChatLLMClientTest` pins both a complete and a cut stream on a stub. **Still to be confirmed on a device**
+     *   against the live API before a release: if the live server ever omits the field on a
+     *   healthy answer, this entry must go back to `false`.
      *
      * @param provider The provider that answers.
      * @param model The model it answers with.
@@ -63,7 +71,7 @@ object CloudStreamEnd {
      */
     fun reportsFinishReason(provider: CloudProvider, model: LLModel): Boolean = when (provider) {
         CloudProvider.OPENAI -> !model.streamsThroughResponsesApi()
-        CloudProvider.DEEPSEEK, CloudProvider.GOOGLE -> true
+        CloudProvider.DEEPSEEK, CloudProvider.GOOGLE, CloudProvider.GIGACHAT -> true
         CloudProvider.ANTHROPIC, CloudProvider.OLLAMA -> false
         // Same client as OpenAI, but whether each *server* sends the finish reason is what
         // matters, and none has been measured yet; off until the device check says otherwise.

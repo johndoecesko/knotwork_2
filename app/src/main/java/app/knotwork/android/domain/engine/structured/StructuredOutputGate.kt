@@ -28,8 +28,16 @@ import javax.inject.Singleton
  */
 @Singleton
 class StructuredOutputGate @Inject constructor(
-    private val modelTextLocalizer: ModelTextLocalizer = ModelTextLocalizer.ENGLISH,
+    private val modelTextLocalizer: ModelTextLocalizer,
 ) {
+
+    /**
+     * English-only instance for tests and callers outside Hilt. Kept as a
+     * secondary constructor rather than a default argument: a default on the
+     * only parameter makes Kotlin emit a second, also `@Inject`-annotated,
+     * no-arg constructor, which Dagger rejects.
+     */
+    constructor() : this(ModelTextLocalizer.ENGLISH)
 
     /**
      * Lenient JSON reader shared by every [runJson] call. `ignoreUnknownKeys`

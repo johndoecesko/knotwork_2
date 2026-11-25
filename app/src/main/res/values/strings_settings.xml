@@ -424,7 +424,7 @@
     <string name="settings_test_backend_failure_unknown">Unknown error</string>
 
     <!-- GigaChat (Sber): the key is an OAuth authorization key, used under a scope. -->
-    <string name="settings_gigachat_key_label">Authorization key</string>
+    <string name="settings_gigachat_key_label">GigaChat authorization key</string>
     <string name="settings_gigachat_key_hint">The authorization key of your GigaChat API project, as the personal account shows it (Client ID and Client Secret in Base64). It is sent only to ngw.devices.sberbank.ru, which returns a 30-minute access token; prompts go to api.giga.chat with that token.</string>
     <string name="settings_gigachat_scope_label">API version (scope)</string>
     <!-- %1$s: the literal scope, e.g. GIGACHAT_API_PERS. -->

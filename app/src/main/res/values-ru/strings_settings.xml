@@ -322,7 +322,7 @@
     <string name="help_reader_error_primary">Открыть в браузере</string>
     <string name="help_reader_error_secondary">Повторить</string>
 
-    <string name="settings_gigachat_key_label">Ключ авторизации</string>
+    <string name="settings_gigachat_key_label">Ключ авторизации GigaChat</string>
     <string name="settings_gigachat_key_hint">Ключ авторизации вашего проекта GigaChat API — как его показывает личный кабинет (Client ID и Client Secret в Base64). Он отправляется только на ngw.devices.sberbank.ru, который выдаёт токен доступа на 30 минут; промпты уходят на api.giga.chat с этим токеном.</string>
     <string name="settings_gigachat_scope_label">Версия API (scope)</string>
     <string name="settings_gigachat_scope_personal">Физлица · %1$s</string>

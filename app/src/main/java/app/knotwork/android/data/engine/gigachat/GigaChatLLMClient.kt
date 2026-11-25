@@ -48,8 +48,8 @@ import java.util.UUID
  *
  * @property credentials The authorization key and scope.
  * @property tokenCache The process's access tokens.
- * @param httpClientFactory The transport.
- * @param timeouts The deadlines; always `CloudClientTimeouts.CONFIG` in production.
+ * @property httpClientFactory The transport; a client is built per call (see [http]).
+ * @property timeouts The deadlines; always `CloudClientTimeouts.CONFIG` in production.
  * @property endpoints Where to send; replaced only by tests.
  * @property requestId A fresh `RqUID` (UUID v4) per token request.
  * @property clock Stamps answers' metadata.
@@ -57,8 +57,8 @@ import java.util.UUID
 class GigaChatLLMClient(
     private val credentials: GigaChatCredentials,
     private val tokenCache: GigaChatTokenCache,
-    httpClientFactory: KoogHttpClient.Factory,
-    timeouts: ConnectionTimeoutConfig,
+    private val httpClientFactory: KoogHttpClient.Factory,
+    private val timeouts: ConnectionTimeoutConfig,
     private val endpoints: GigaChatEndpoints = GigaChatEndpoints.PRODUCTION,
     private val requestId: () -> String = { UUID.randomUUID().toString() },
     private val clock: KoogClock = KoogClock.System,
@@ -66,34 +66,39 @@ class GigaChatLLMClient(
 
     override val clientName: String = CLIENT_NAME
 
-    private val oauth: KoogHttpClient = httpClientFactory.create(
+    /**
+     * A transport client for one request, carrying [headers] as its default headers.
+     *
+     * Koog 1.3.0's `KtorKoogHttpClient` drops every per-request header but `Content-Type` (its
+     * `applyRequestHeaders` builds a detached `Headers` object), so the token and the `RqUID` —
+     * which change from call to call — have to be set when the client is built. The client is
+     * closed when the call is done.
+     */
+    private fun http(baseUrl: String, headers: Map<String, String>): KoogHttpClient = httpClientFactory.create(
         clientName = CLIENT_NAME,
-        baseUrl = endpoints.oauthBaseUrl,
+        baseUrl = baseUrl,
+        headers = headers,
         requestTimeoutMillis = timeouts.requestTimeoutMillis,
         connectTimeoutMillis = timeouts.connectTimeoutMillis,
         socketTimeoutMillis = timeouts.socketTimeoutMillis,
     )
 
-    private val api: KoogHttpClient = httpClientFactory.create(
-        clientName = CLIENT_NAME,
-        baseUrl = endpoints.apiBaseUrl,
-        requestTimeoutMillis = timeouts.requestTimeoutMillis,
-        connectTimeoutMillis = timeouts.connectTimeoutMillis,
-        socketTimeoutMillis = timeouts.socketTimeoutMillis,
-    )
+    /** The API client authorized with [token]. */
+    private fun api(token: String): KoogHttpClient = http(endpoints.apiBaseUrl, bearer(token))
 
     override fun llmProvider(): LLMProvider = GigaChatLLMProvider
 
     override suspend fun execute(prompt: Prompt, model: LLModel, tools: List<ToolDescriptor>): Message.Assistant {
         val body = encode(GigaChatMessageMapper.request(prompt, model, tools, stream = false))
         val answer = authorized { token ->
-            api.post(
-                path = GigaChatEndpoints.CHAT_PATH,
-                requestBody = body,
-                requestBodyType = String::class,
-                responseType = String::class,
-                headers = jsonHeaders(token),
-            )
+            api(token).use {
+                it.post(
+                    path = GigaChatEndpoints.CHAT_PATH,
+                    requestBody = body,
+                    requestBodyType = String::class,
+                    responseType = String::class,
+                )
+            }
         }
         val completion = GigaChatJson.decodeFromString(GigaChatCompletion.serializer(), answer)
         return GigaChatMessageMapper.assistant(completion, clock)
@@ -126,20 +131,19 @@ class GigaChatLLMClient(
     /** One streamed request with [token]: its text and function-call frames, then [StreamFrame.End]. */
     private fun streamOnce(body: String, token: String): Flow<StreamFrame> = flow {
         val state = StreamState()
-        api.sse(
-            path = GigaChatEndpoints.CHAT_PATH,
-            requestBody = body,
-            requestBodyType = String::class,
-            dataFilter = { !it.isNullOrBlank() },
-            decodeStreamingResponse = ::decodeEvent,
-            processStreamingChunk = { it },
-            // Only the token: the transport sets `Accept: text/event-stream`, which a JSON Accept
-            // would replace.
-            headers = bearer(token),
-        ).collect { event ->
-            when (event) {
-                StreamEvent.Done -> state.done = true
-                is StreamEvent.Chunk -> state.read(event.completion).forEach { emit(it) }
+        api(token).use { client ->
+            client.sse(
+                path = GigaChatEndpoints.CHAT_PATH,
+                requestBody = body,
+                requestBodyType = String::class,
+                dataFilter = { !it.isNullOrBlank() },
+                decodeStreamingResponse = ::decodeEvent,
+                processStreamingChunk = { it },
+            ).collect { event ->
+                when (event) {
+                    StreamEvent.Done -> state.done = true
+                    is StreamEvent.Chunk -> state.read(event.completion).forEach { emit(it) }
+                }
             }
         }
         // `[DONE]` is as strong a sign of a whole answer as a finish reason; a stream that has
@@ -179,11 +183,7 @@ class GigaChatLLMClient(
      */
     override suspend fun models(): List<LLModel> {
         val answer = authorized { token ->
-            api.get(
-                path = GigaChatEndpoints.MODELS_PATH,
-                responseType = String::class,
-                headers = jsonHeaders(token),
-            )
+            api(token).use { it.get(path = GigaChatEndpoints.MODELS_PATH, responseType = String::class) }
         }
         return GigaChatJson.decodeFromString(GigaChatModelList.serializer(), answer).data
             .filter { it.type == null || it.type == GigaChatModels.CHAT_MODEL_TYPE }
@@ -198,13 +198,14 @@ class GigaChatLLMClient(
             GigaChatEmbeddingRequest(model = model.id, input = inputs),
         )
         val answer = authorized { token ->
-            api.post(
-                path = GigaChatEndpoints.EMBEDDINGS_PATH,
-                requestBody = body,
-                requestBodyType = String::class,
-                responseType = String::class,
-                headers = jsonHeaders(token),
-            )
+            api(token).use {
+                it.post(
+                    path = GigaChatEndpoints.EMBEDDINGS_PATH,
+                    requestBody = body,
+                    requestBodyType = String::class,
+                    responseType = String::class,
+                )
+            }
         }
         return GigaChatJson.decodeFromString(GigaChatEmbeddingResponse.serializer(), answer).data
             .sortedBy { it.index }
@@ -215,10 +216,8 @@ class GigaChatLLMClient(
     override suspend fun moderate(prompt: Prompt, model: LLModel): ModerationResult =
         throw LLMClientException(CLIENT_NAME, "GigaChat offers no moderation endpoint")
 
-    override fun close() {
-        oauth.close()
-        api.close()
-    }
+    /** Nothing to release: every call builds and closes its own transport client. */
+    override fun close() = Unit
 
     /**
      * Runs [request] with a token; on a 401 drops that token and runs it once more with a new one.
@@ -246,18 +245,22 @@ class GigaChatLLMClient(
      */
     private suspend fun requestToken(): GigaChatAccessToken {
         val answer = try {
-            oauth.post(
-                path = GigaChatEndpoints.OAUTH_PATH,
-                requestBody = "$SCOPE_FIELD=${credentials.scope.wire}",
-                requestBodyType = String::class,
-                responseType = String::class,
-                headers = mapOf(
-                    AUTHORIZATION to "$BASIC ${credentials.authorizationKey}",
-                    RQ_UID to requestId(),
-                    CONTENT_TYPE to FORM_CONTENT_TYPE,
-                    ACCEPT to JSON_CONTENT_TYPE,
-                ),
+            val headers = mapOf(
+                AUTHORIZATION to "$BASIC ${credentials.authorizationKey}",
+                RQ_UID to requestId(),
+                ACCEPT to JSON_CONTENT_TYPE,
             )
+            http(endpoints.oauthBaseUrl, headers).use {
+                it.post(
+                    path = GigaChatEndpoints.OAUTH_PATH,
+                    requestBody = "$SCOPE_FIELD=${credentials.scope.wire}",
+                    requestBodyType = String::class,
+                    responseType = String::class,
+                    // Content-Type is the one per-request header Koog keeps; it replaces the
+                    // JSON type the transport sets by default.
+                    headers = mapOf(CONTENT_TYPE to FORM_CONTENT_TYPE),
+                )
+            }
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
@@ -272,8 +275,6 @@ class GigaChatLLMClient(
     }
 
     private fun bearer(token: String): Map<String, String> = mapOf(AUTHORIZATION to "$BEARER $token")
-
-    private fun jsonHeaders(token: String): Map<String, String> = bearer(token) + (ACCEPT to JSON_CONTENT_TYPE)
 
     private fun encode(request: GigaChatChatRequest): String =
         GigaChatJson.encodeToString(GigaChatChatRequest.serializer(), request)

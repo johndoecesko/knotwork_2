@@ -159,6 +159,8 @@ class SettingsViewModelTest {
         every { apiKeys.getModel(CloudProvider.OPENROUTER) } returns MutableStateFlow<String?>(null)
         every { apiKeys.getApiKey(CloudProvider.GROQ) } returns MutableStateFlow<String?>(null)
         every { apiKeys.getModel(CloudProvider.GROQ) } returns MutableStateFlow<String?>(null)
+        every { apiKeys.getApiKey(CloudProvider.GIGACHAT) } returns MutableStateFlow<String?>(null)
+        every { apiKeys.getModel(CloudProvider.GIGACHAT) } returns MutableStateFlow<String?>(null)
         every { apiKeys.getBaseUrl(CloudProvider.OPENAI_COMPATIBLE) } returns MutableStateFlow<String?>(null)
         every { apiKeys.getModel(CloudProvider.OPENAI_COMPATIBLE) } returns MutableStateFlow<String?>(null)
         every { apiKeys.getOllamaContextWindowSize() } returns MutableStateFlow(4096)

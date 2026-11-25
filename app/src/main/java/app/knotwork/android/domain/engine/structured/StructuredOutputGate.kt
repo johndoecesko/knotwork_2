@@ -27,9 +27,7 @@ import javax.inject.Singleton
  * [RepairListener].
  */
 @Singleton
-class StructuredOutputGate @Inject constructor(
-    private val modelTextLocalizer: ModelTextLocalizer,
-) {
+class StructuredOutputGate @Inject constructor(private val modelTextLocalizer: ModelTextLocalizer) {
 
     /**
      * English-only instance for tests and callers outside Hilt. Kept as a

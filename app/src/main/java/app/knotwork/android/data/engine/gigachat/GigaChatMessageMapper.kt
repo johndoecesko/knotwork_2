@@ -153,12 +153,11 @@ internal object GigaChatMessageMapper {
     }
 
     /** The Koog tool call for the model's [call], identified by its [stateId] (a fresh id without one). */
-    fun toolCall(call: GigaChatFunctionCall, stateId: String?): MessagePart.Tool.Call =
-        MessagePart.Tool.Call(
-            id = stateId ?: UUID.randomUUID().toString(),
-            tool = call.name,
-            args = argumentsText(call),
-        )
+    fun toolCall(call: GigaChatFunctionCall, stateId: String?): MessagePart.Tool.Call = MessagePart.Tool.Call(
+        id = stateId ?: UUID.randomUUID().toString(),
+        tool = call.name,
+        args = argumentsText(call),
+    )
 
     /** The arguments of [call] as JSON text: an object as it is, a string holding JSON unwrapped. */
     fun argumentsText(call: GigaChatFunctionCall): String = when (val arguments = call.arguments) {

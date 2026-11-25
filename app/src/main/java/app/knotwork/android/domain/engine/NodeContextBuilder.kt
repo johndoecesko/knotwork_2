@@ -61,9 +61,7 @@ import javax.inject.Singleton
  *   the model is addressed in; English unless bound otherwise.
  */
 @Singleton
-class NodeContextBuilder @Inject constructor(
-    private val modelTextLocalizer: ModelTextLocalizer,
-) {
+class NodeContextBuilder @Inject constructor(private val modelTextLocalizer: ModelTextLocalizer) {
 
     /**
      * English-only instance for tests and callers outside Hilt. Kept as a

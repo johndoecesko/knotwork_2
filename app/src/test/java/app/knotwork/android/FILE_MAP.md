@@ -104,6 +104,11 @@ Only Kotlin files appear inside the generated blocks.
     - `StagedDatabasePreparerFailureTest.kt` - How `SqlCipherStagedDatabasePreparer` names a failure of the staged database's work: a full disk anywhere in the chain is the phone being full, never a damaged archive; anything else is a database that cannot be used.
   - `engine/` - Tests for the inference engines, client factories and the task queue.
     - `CloudModelListGuardTest.kt` - The cloud model lists against Koog's own catalogue: every model the app offers is one of Koog's chat constants, and every chat constant Koog declares for the four providers it lists is either offered or left out here with a reason.
+    - `gigachat/` - Tests for the GigaChat client: OAuth token, chat format and wire.
+      - `GigaChatLLMClientTest.kt` - `GigaChatLLMClient` on the wire: the token request, the Bearer token on every call, the shared token cache, the single repeat after a 401, the end of a stream, functions, the model list.
+      - `GigaChatMessageMapperTest.kt` - `GigaChatMessageMapper`: Koog's prompt in GigaChat's chat format — one system message first, tools as functions, a call and its result as GigaChat expects them back.
+      - `GigaChatTokenCacheTest.kt` - `GigaChatTokenCache`: a token is reused until a minute before it expires, a refused one is dropped, concurrent callers share one fetch, and credentials never mix.
+    - `KoogClientFactoryGigaChatTest.kt` - `KoogClientFactory` for `CloudProvider.GIGACHAT`: the app's own client, built from the saved authorization key and scope, behind the same admission as every hosted provider.
     - `KoogClientFactoryTest.kt` - Tests for KoogClientFactory.
     - `KoogClientFactoryTimeoutTest.kt` - Guards the network deadlines applied to cloud clients.
     - `KoogCloudLlmModelResolverTest.kt` - Unit tests for `KoogCloudLlmModelResolver` — the model object a Cloud node sends, resolved from the saved id through `KoogCloudModelCatalog`, the same answer the screens show.
@@ -131,6 +136,7 @@ Only Kotlin files appear inside the generated blocks.
     - `TaskQueueManagerImplTest.kt` - Unit tests for `TaskQueueManagerImpl`: enqueuing a task processes it and updates the session state without a race or a deadlock.
   - `local/` - Tests for Room, DataStore, the encrypted stores and the filesystem-backed stores.
     - `AgentWorkspaceImplTest.kt` - Verifies the `AgentWorkspaceImpl` foundation: the path-traversal containment boundary (the single canonicalisation gate), the per-file and total-size quotas at their exact boundaries, the text/binary read distinction, and the overwrite semantics — each surfaced as a typed `WorkspaceError`.
+    - `ApiKeyManagerGigaChatTest.kt` - `ApiKeyManager`'s GigaChat entries: the key under the wire-id name every provider uses, and the scope under a name of its own that backups carry.
     - `ApiKeyManagerTest.kt` - Tests for ApiKeyManager.
     - `AppDatabaseMigrationTest.kt` - Verifies the Room migration scripts on the JVM, starting with `MIGRATION_17_18`.
     - `AttachmentStoreImplTest.kt` - Verifies `AttachmentStoreImpl`: aspect-preserving downscale to the longest-side cap (never a square crop), JPEG re-encode, ingest of invalid bytes, the content-URI ingest path, and the delete / list surface used by retention.
@@ -307,6 +313,7 @@ Only Kotlin files appear inside the generated blocks.
     - `ChatHistoryWindowPlannerTest.kt` - Unit tests for `ChatHistoryWindowPlanner` — the pure planner that decides how a session's chat history is split into a summarised prefix and a verbatim live window.
     - `CheckpointReplayTest.kt` - Unit coverage for `CheckpointReplay`.
     - `CloudClientUnavailabilityTest.kt` - Unit tests for `CloudClientUnavailability.message` — each cause must name the setting that resolves it and must not borrow another cause's remedy.
+    - `CloudErrorSanitizerBasicTest.kt` - `CloudErrorSanitizer` and `Basic` credentials — the shape GigaChat's authorization key travels in.
     - `CloudErrorSanitizerTest.kt` - Unit tests for `CloudErrorSanitizer`.
     - `CloudStreamEndTest.kt` - `CloudStreamEnd`: which providers' missing finish reason means a cut answer — by measurement, per provider and, on OpenAI, per endpoint — and that a finish reason always means a whole one.
     - `DefaultPipelineFactoryTest.kt` - Unit tests for `DefaultPipelineFactory`.
@@ -759,6 +766,7 @@ Only Kotlin files appear inside the generated blocks.
       - `PendingMemoryImportTest.kt` - Unit tests for `PendingMemoryImport.warnings` — which notices the memory-import dialog raises about a staged file, and in what order.
       - `ProbeFailureTextTest.kt` - The settings row's reason for a failed backend probe: the engine's own text as it came, the app's sentence in the interface language otherwise — including for a record stored by an earlier release, which carries neither.
       - `provider/` - Tests for the cloud-provider editor.
+        - `ProviderDetailGigaChatTest.kt` - GigaChat on the provider screen: the address shown read-only is the one the client sends to.
         - `ProviderDetailProjectionTest.kt` - Coverage for the projection that feeds the catalog's provider detail surface.
         - `ProviderDetailViewModelTest.kt` - Unit tests for `ProviderDetailViewModel` — the standalone editor backing the Settings → External providers detail screen.
         - `ProviderPickerViewModelTest.kt` - Unit tests for `ProviderPickerViewModel` — which providers the picker marks *added*.

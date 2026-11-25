@@ -57,6 +57,13 @@ Only Kotlin files appear inside the generated blocks.
     - `ModelHopRule.kt` - Where one request of a model client may go: the rule `KoogTransportFactory` applies to every hop — the request the client sends and each redirect a server answers with.
     - `ModelNetworkGate.kt` - The one place that decides whether a model request may leave the device right now.
     - `OpenAiCompatibleClients.kt` - Builds the Koog client of the providers reached through the OpenAI API: OpenRouter, Groq and a server the user runs (`CloudProvider.OPENAI_COMPATIBLE`).
+    - `gigachat/` - GigaChat (Sber) client: Koog has none, so the app implements `LLMClient` itself on the shared transport.
+      - `GigaChatEndpoints.kt` - Where `GigaChatLLMClient` sends: the OAuth endpoint that turns the authorization key into an access token, and the REST API the token is used on.
+      - `GigaChatLLMClient.kt` - The Koog `LLMClient` of the GigaChat API: OAuth access token from `GigaChatTokenCache`, one repeat after a 401, SSE streaming with an `End` frame that says whether the answer was whole, functions, model list, embeddings.
+      - `GigaChatMessageMapper.kt` - Translates between Koog's prompt model and GigaChat's chat format — one system message first, tools as `functions`, a call and its result as GigaChat expects them back.
+      - `GigaChatModels.kt` - The Koog provider identity of every GigaChat model the app builds, and the model descriptors it sends.
+      - `GigaChatTokenCache.kt` - The GigaChat access tokens of this process, kept in memory only and shared by every client; refreshed a minute before expiry, one fetch at a time under a `Mutex`.
+      - `GigaChatWire.kt` - The JSON shapes of the GigaChat REST API (`/v1`) the client reads and sends.
     - `OpenClAccelerationProbe.kt` - `HardwareAccelerationProbe` impl: decides whether GPU inference is plausible by linking `libOpenCL.so` (falling back to the conventional vendor paths) — never touches the native inference stack, so it cannot abort the process the way a real GPU init can. Memoised; both seams (linker, filesystem) injectable for JVM tests.
     - `retry/` - Cloud retry wrapping (data layer).
       - `CloudRetryPolicy.kt` - Decides whether a failed cloud call is tried again, and after how long.
@@ -515,6 +522,7 @@ Only Kotlin files appear inside the generated blocks.
     - `ExternalAutomationRejectionReason.kt` - The single refusal dictionary of the external entry point (malformed-request reasons and policy refusals in one enum, so journal and user-facing text share one vocabulary). Names are persisted and published — never renamed.
     - `ExternalAutomationRequest.kt` - Validated external request (`target`, `prompt`, `requestId`, `returnAction`, `returnPackage`) plus `ExternalAutomationTarget` (ById / ByName) and `ExternalAutomationBinding` (the one allowed pipeline, with `allows(target)` — the membership test a future multi-pipeline allowlist would widen).
     - `ExternalAutomationStatus.kt` - Sealed status an external request is reported in: `Accepted` / `Completed` / `Failed` / `Rejected(reason)` / `Blocked(reason)`. Sealed rather than flat so a refusal always carries its cause; discriminators are persisted and part of the public contract.
+    - `GigaChatScope.kt` - The GigaChat API version (OAuth `scope`) an authorization key was issued for: `GIGACHAT_API_PERS`, `GIGACHAT_API_B2B` or `GIGACHAT_API_CORP`.
     - `Identity.kt` - Snapshot of the device-local identity (display name, 8-hex device id, AndroidKeyStore availability) shown on the Settings identity card.
     - `ImportCollisionResolution.kt` - Enum (`REPLACE` / `IMPORT_AS_COPY`) for how single/bundle import resolves a pipeline-id collision with the existing library.
     - `ImportProblem.kt` - Why a pipeline, a pipeline bundle or a memory export could not be imported.

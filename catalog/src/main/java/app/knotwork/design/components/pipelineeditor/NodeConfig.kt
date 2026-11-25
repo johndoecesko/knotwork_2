@@ -49,6 +49,7 @@ enum class CloudProvider {
     DEEPSEEK,
     OPENROUTER,
     GROQ,
+    GIGACHAT,
     OLLAMA,
     OPENAI_COMPATIBLE,
     AUTO,

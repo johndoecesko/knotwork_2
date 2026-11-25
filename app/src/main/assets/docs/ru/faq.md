@@ -64,8 +64,8 @@ started](user-guide.md#getting-started).
 <!-- en: which-cloud-providers-are-supported -->
 ### Какие облачные провайдеры поддерживаются?
 
-**Облачные сервисы**: OpenAI, Anthropic, Google Gemini, DeepSeek, OpenRouter и
-Groq, каждый с вашим собственным ключом. **Ваш собственный сервер**: **Ollama** или
+**Облачные сервисы**: OpenAI, Anthropic, Google Gemini, DeepSeek, OpenRouter, Groq
+и GigaChat (Сбер), каждый с вашим собственным ключом. **Ваш собственный сервер**: **Ollama** или
 любой сервер с API OpenAI.
 Все они подключаются только по вашему желанию. Они находятся в
 **Настройки → Модели → Внешние провайдеры**, а **Проверить** на экране каждого

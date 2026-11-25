@@ -29,6 +29,9 @@ enum class ProviderId(
     /** Groq hosted API. */
     Groq(CloudProvider.GROQ),
 
+    /** Sber GigaChat API (OAuth authorization key + scope). */
+    GigaChat(CloudProvider.GIGACHAT),
+
     /** Self-hosted Ollama instance (typically over Wi-Fi). */
     Ollama(CloudProvider.OLLAMA),
 

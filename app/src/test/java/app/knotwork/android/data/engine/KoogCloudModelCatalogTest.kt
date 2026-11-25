@@ -118,6 +118,19 @@ class KoogCloudModelCatalogTest {
     }
 
     @Test
+    fun `given GigaChat then a typed model is used as it is and nothing typed means GigaChat-2`() {
+        assertEquals(CloudModelInUse("GigaChat-2-Max"), catalog.modelInUse(CloudProvider.GIGACHAT, "GigaChat-2-Max"))
+        assertEquals(
+            CloudModelInUse("GigaChat-2", CloudModelFallback.NotChosen),
+            catalog.modelInUse(CloudProvider.GIGACHAT, null),
+        )
+        assertEquals(
+            CloudModelInUse("GigaChat-2", CloudModelFallback.NotChosen),
+            catalog.modelInUse(CloudProvider.GIGACHAT, " "),
+        )
+    }
+
+    @Test
     fun `given a provider without a default then only a saved model is used`() {
         listOf(CloudProvider.OPENROUTER, CloudProvider.GROQ, CloudProvider.OPENAI_COMPATIBLE).forEach { provider ->
             assertNull("$provider has no default.", catalog.modelInUse(provider, null))

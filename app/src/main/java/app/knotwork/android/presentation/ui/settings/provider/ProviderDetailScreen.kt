@@ -27,6 +27,7 @@ import app.knotwork.android.domain.engine.CloudModelCatalog
 import app.knotwork.android.domain.engine.CloudModelFallback
 import app.knotwork.android.domain.engine.CloudModelInUse
 import app.knotwork.android.domain.models.CloudProvider
+import app.knotwork.android.domain.models.GigaChatScope
 import app.knotwork.android.domain.models.ProviderId
 import app.knotwork.android.domain.repositories.ApiKeyRepository
 import app.knotwork.android.domain.repositories.NetworkSettings
@@ -48,6 +49,8 @@ import app.knotwork.design.screens.settings.ProviderDetailViewState
 import app.knotwork.design.screens.settings.ProviderFixedAddressUi
 import app.knotwork.design.screens.settings.ProviderKeyUi
 import app.knotwork.design.screens.settings.ProviderModelUi
+import app.knotwork.design.screens.settings.ProviderOptionChoiceUi
+import app.knotwork.design.screens.settings.ProviderOptionUi
 import app.knotwork.design.screens.settings.SettingsHint
 import app.knotwork.design.screens.settings.SettingsHintController
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -109,6 +112,7 @@ fun ProviderDetailScreen(
                 onTestCancel = viewModel::cancelConnectionTest,
                 onChooseModel = viewModel::openModelSheet,
                 onModelSheetDismiss = viewModel::closeModelSheet,
+                onOptionChange = viewModel::updateGigaChatScope,
             ),
         )
     }
@@ -157,6 +161,7 @@ internal fun ProviderDetailUiState.toViewState(
             ProviderFixedAddressUi(label = context.getString(R.string.settings_fixed_address_label), value = it)
         },
         apiKey = keyUi(providerId, context),
+        option = gigaChatScopeUi(providerId, context),
         test = test.toTestProbeUi(context, subject, elapsedSeconds),
         model = modelUi(providerId, context, offeredModels, test, listed),
         contextWindow = if (providerId == ProviderId.Ollama) {
@@ -213,16 +218,19 @@ private fun ProviderDetailUiState.addressUi(providerId: ProviderId, context: Con
 private fun ProviderDetailUiState.keyUi(providerId: ProviderId, context: Context): ProviderKeyUi? {
     if (!providerId.cloudProvider.usesApiKey) return null
     val compat = providerId == ProviderId.OpenAiCompatible
+    val gigaChat = providerId == ProviderId.GigaChat
     return ProviderKeyUi(
-        label = if (compat) {
-            context.getString(R.string.settings_key_label_compat)
-        } else {
-            context.getString(R.string.settings_provider_api_key_label, providerId.displayName(context))
+        label = when {
+            compat -> context.getString(R.string.settings_key_label_compat)
+            // GigaChat calls it an authorization key, and it is not an API key: it buys one.
+            gigaChat -> context.getString(R.string.settings_gigachat_key_label)
+            else -> context.getString(R.string.settings_provider_api_key_label, providerId.displayName(context))
         },
         value = apiKey,
         marker = when (providerId) {
             ProviderId.OpenAiCompatible -> context.getString(R.string.settings_marker_optional)
-            ProviderId.OpenRouter, ProviderId.Groq -> context.getString(R.string.settings_marker_required)
+            ProviderId.OpenRouter, ProviderId.Groq, ProviderId.GigaChat ->
+                context.getString(R.string.settings_marker_required)
             else -> null
         },
         placeholder = when (providerId) {
@@ -231,8 +239,36 @@ private fun ProviderDetailUiState.keyUi(providerId: ProviderId, context: Context
             ProviderId.Groq -> context.getString(R.string.settings_key_placeholder_groq)
             else -> null
         },
-        hint = context.getString(R.string.settings_key_hint_compat).takeIf { compat },
+        hint = when {
+            compat -> context.getString(R.string.settings_key_hint_compat)
+            gigaChat -> context.getString(R.string.settings_gigachat_key_hint)
+            else -> null
+        },
     )
+}
+
+/**
+ * The scope GigaChat's authorization key is used under: a dropdown of the three the OAuth endpoint
+ * knows, each named for whom it is, with its literal value so it can be matched against the
+ * personal account. `null` for every other provider.
+ */
+private fun ProviderDetailUiState.gigaChatScopeUi(providerId: ProviderId, context: Context): ProviderOptionUi? {
+    if (providerId != ProviderId.GigaChat) return null
+    return ProviderOptionUi(
+        label = context.getString(R.string.settings_gigachat_scope_label),
+        choices = GigaChatScope.entries.map { scope ->
+            ProviderOptionChoiceUi(id = scope.wire, label = context.getString(scope.labelRes(), scope.wire))
+        },
+        selectedId = gigaChatScope.wire,
+        hint = context.getString(R.string.settings_gigachat_scope_hint),
+    )
+}
+
+/** The label of [this] scope; `%1$s` in it is the literal scope. */
+private fun GigaChatScope.labelRes(): Int = when (this) {
+    GigaChatScope.PERSONAL -> R.string.settings_gigachat_scope_personal
+    GigaChatScope.BUSINESS_PREPAID -> R.string.settings_gigachat_scope_business_prepaid
+    GigaChatScope.BUSINESS_PAYG -> R.string.settings_gigachat_scope_business_payg
 }
 
 /**
@@ -310,6 +346,8 @@ private fun CloudModelInUse.fallbackNote(context: Context): String? = when (val 
 internal fun fixedAddressOf(providerId: ProviderId): String? = when (providerId) {
     ProviderId.OpenRouter -> "https://openrouter.ai/api"
     ProviderId.Groq -> "https://api.groq.com/openai"
+    // The API; the key itself goes to the OAuth endpoint (ngw.devices.sberbank.ru), said in the key's hint.
+    ProviderId.GigaChat -> "https://api.giga.chat/v1"
     else -> null
 }
 
@@ -410,6 +448,7 @@ private fun retryHints(context: Context): SettingsHintController = SettingsHintC
  * @property modelSheetOpen Whether the server's model list is open over the form.
  * @property modelInUse The model a run uses with the saved [model], and why it differs if it
  *   does; `null` when the provider is not usable until a model is chosen.
+ * @property gigaChatScope The scope GigaChat's key is used under; unused by every other provider.
  */
 data class ProviderDetailUiState(
     val apiKey: String = "",
@@ -423,6 +462,7 @@ data class ProviderDetailUiState(
     val addressRefusal: AddressRefusal? = null,
     val modelSheetOpen: Boolean = false,
     val modelInUse: CloudModelInUse? = null,
+    val gigaChatScope: GigaChatScope = GigaChatScope.DEFAULT,
 )
 
 /**
@@ -533,6 +573,11 @@ class ProviderDetailViewModel @Inject constructor(
                 .onEach { origin -> _uiState.update { it.copy(cleartextConsentOrigin = origin) } }
                 .launchIn(viewModelScope)
         }
+        if (providerId == ProviderId.GigaChat) {
+            apiKeyRepository.getGigaChatScope()
+                .onEach { v -> _uiState.update { it.copy(gigaChatScope = v) } }
+                .launchIn(viewModelScope)
+        }
         if (providerId == ProviderId.Ollama) {
             apiKeyRepository.getOllamaContextWindowSize()
                 .onEach { v -> _uiState.update { it.copy(ollamaContextWindow = v.toString()) } }
@@ -548,10 +593,10 @@ class ProviderDetailViewModel @Inject constructor(
      */
     private fun observeConnectionTestInputs(provider: CloudProvider) {
         combine(
-            _uiState.map { it.connectionDraft() }.distinctUntilChanged(),
+            _uiState.map { it.connectionDraft() to it.gigaChatScope }.distinctUntilChanged(),
             networkSettings.approvedCleartextOrigins,
             networkSettings.blockNetworkFromLocalModel,
-        ) { draft, approved, localOnly -> ConnectionTestInputs(draft, approved, localOnly) }
+        ) { (draft, scope), approved, localOnly -> ConnectionTestInputs(draft, approved, localOnly, scope) }
             .onEach { inputs ->
                 connectionTest.onInputs(
                     inputs = inputs,
@@ -653,6 +698,18 @@ class ProviderDetailViewModel @Inject constructor(
         viewModelScope.launch { networkSettings.approveCleartextOrigin(origin) }
     }
 
+    /**
+     * Persists the scope GigaChat's authorization key is used under. A result of Test connection
+     * is dropped with it: a token is bought per scope.
+     *
+     * @param wire The literal scope ([GigaChatScope.wire]) the option field reports.
+     */
+    fun updateGigaChatScope(wire: String) {
+        val scope = GigaChatScope.entries.firstOrNull { it.wire == wire } ?: return
+        _uiState.update { it.copy(gigaChatScope = scope) }
+        viewModelScope.launch { apiKeyRepository.setGigaChatScope(scope) }
+    }
+
     fun updateOllamaContextWindow(value: String) {
         viewModelScope.launch {
             val size = value.toIntOrNull() ?: SettingsDefaults.OLLAMA_CONTEXT_WINDOW_DEFAULT
@@ -681,11 +738,13 @@ private fun ProviderDetailUiState.connectionDraft(): ProviderConnectionDraft =
  * @property draft The key and address in the form.
  * @property approvedCleartextOrigins The approved unencrypted origins.
  * @property localOnly Whether "Block network from local model" is on.
+ * @property gigaChatScope GigaChat's scope — read by a check of GigaChat only, compared for all.
  */
 private data class ConnectionTestInputs(
     val draft: ProviderConnectionDraft,
     val approvedCleartextOrigins: Set<String>,
     val localOnly: Boolean,
+    val gigaChatScope: GigaChatScope,
 )
 
 /** Test tag for the unencrypted-connection consent banner on the Ollama provider screen. */

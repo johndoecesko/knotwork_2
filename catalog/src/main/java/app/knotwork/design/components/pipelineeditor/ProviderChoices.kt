@@ -421,6 +421,7 @@ internal fun CloudProvider.displayName(): String = when (this) {
     CloudProvider.DEEPSEEK -> "DeepSeek"
     CloudProvider.OPENROUTER -> "OpenRouter"
     CloudProvider.GROQ -> "Groq"
+    CloudProvider.GIGACHAT -> "GigaChat"
     CloudProvider.OLLAMA -> "Ollama"
     CloudProvider.OPENAI_COMPATIBLE -> stringResource(R.string.knotwork_provider_openai_compatible)
     CloudProvider.AUTO -> stringResource(R.string.knotwork_provider_auto)

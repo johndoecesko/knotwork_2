@@ -12,12 +12,16 @@ import ai.koog.prompt.executor.clients.google.GoogleLLMClient
 import ai.koog.prompt.executor.clients.openai.OpenAIClientSettings
 import ai.koog.prompt.executor.clients.openai.OpenAILLMClient
 import ai.koog.prompt.executor.ollama.client.OllamaClient
+import app.knotwork.android.data.engine.gigachat.GigaChatCredentials
+import app.knotwork.android.data.engine.gigachat.GigaChatLLMClient
+import app.knotwork.android.data.engine.gigachat.GigaChatTokenCache
 import app.knotwork.android.data.engine.retry.CloudRetryWrapper
 import app.knotwork.android.data.engine.retry.RetryAfterSlot
 import app.knotwork.android.domain.engine.CloudClientUnavailability
 import app.knotwork.android.domain.engine.CloudLlmClientFactory
 import app.knotwork.android.domain.engine.retry.CloudRetryListener
 import app.knotwork.android.domain.models.CloudProvider
+import app.knotwork.android.domain.models.GigaChatScope
 import app.knotwork.android.domain.repositories.ApiKeyRepository
 import kotlinx.coroutines.flow.firstOrNull
 import javax.inject.Inject
@@ -45,12 +49,16 @@ import javax.inject.Singleton
  * @property apiKeyRepository Source of the provider keys, models and server addresses.
  * @property modelNetworkGate Decides whether model traffic may leave the device right now.
  * @property retryWrapper Decorates each client with the transient-failure retry policy.
+ * @property gigaChatTokens The GigaChat access tokens of the process: GigaChat is reached with an
+ *   OAuth token bought with the saved key, and every GigaChat client shares one cache (see
+ *   [GigaChatTokenCache]). Defaulted so a test that never builds a GigaChat client need not pass one.
  */
 @Singleton
 class KoogClientFactory @Inject constructor(
     private val apiKeyRepository: ApiKeyRepository,
     private val modelNetworkGate: ModelNetworkGate,
     private val retryWrapper: CloudRetryWrapper,
+    private val gigaChatTokens: GigaChatTokenCache = GigaChatTokenCache(),
 ) : CloudLlmClientFactory {
 
     /**
@@ -129,13 +137,18 @@ class KoogClientFactory @Inject constructor(
     private suspend fun hostedAdmission(provider: CloudProvider): Admission {
         modelNetworkGate.cloudRefusal()?.let { return Admission.Refused(it) }
         val key = apiKey(provider) ?: return Admission.Refused(CloudClientUnavailability.MissingCredentials)
-        return missingModelCause(provider)?.let(Admission::Refused) ?: Admission.Granted(apiKey = key, baseUrl = null)
+        return missingModelCause(provider)?.let(Admission::Refused)
+            ?: Admission.Granted(apiKey = key, baseUrl = null, gigaChatScope = gigaChatScope(provider))
     }
 
     /** The outcome of [admission]. */
     private sealed interface Admission {
-        /** A client may be built from [apiKey] (absent for a server without one) and [baseUrl]. */
-        data class Granted(val apiKey: String?, val baseUrl: String?) : Admission
+        /**
+         * A client may be built from [apiKey] (absent for a server without one), [baseUrl] and, for
+         * GigaChat, the [gigaChatScope] its key is used under.
+         */
+        data class Granted(val apiKey: String?, val baseUrl: String?, val gigaChatScope: GigaChatScope? = null) :
+            Admission
 
         /** No client; [cause] says why. */
         data class Refused(val cause: CloudClientUnavailability) : Admission
@@ -154,12 +167,18 @@ class KoogClientFactory @Inject constructor(
      * @param http The transport, which applies the per-hop rule.
      * @return An undecorated client; the caller closes it.
      */
-    internal fun checkClient(
+    internal suspend fun checkClient(
         provider: CloudProvider,
         apiKey: String?,
         baseUrl: String?,
         http: KoogHttpClient.Factory,
-    ): LLMClient = rawClient(provider, Admission.Granted(apiKey = apiKey, baseUrl = baseUrl), http)
+    ): LLMClient = rawClient(
+        provider,
+        // GigaChat's scope is not in the form's draft: it is saved the moment it is picked, so the
+        // saved one is the one on the screen.
+        Admission.Granted(apiKey = apiKey, baseUrl = baseUrl, gigaChatScope = gigaChatScope(provider)),
+        http,
+    )
 
     /**
      * Builds the raw, un-decorated Koog client for [provider] from what [admission] granted.
@@ -200,6 +219,17 @@ class KoogClientFactory @Inject constructor(
         )
         CloudProvider.OPENROUTER, CloudProvider.GROQ, CloudProvider.OPENAI_COMPATIBLE ->
             OpenAiCompatibleClients.client(provider, granted.apiKey, granted.baseUrl, http)
+        // Not a Koog client: Koog has no GigaChat client, and its OpenAI one cannot carry an OAuth
+        // token that changes every 30 minutes nor GigaChat's `functions` (see GigaChatLLMClient).
+        CloudProvider.GIGACHAT -> GigaChatLLMClient(
+            credentials = GigaChatCredentials(
+                authorizationKey = granted.requireKey(),
+                scope = checkNotNull(granted.gigaChatScope) { "admission granted no GigaChat scope" },
+            ),
+            tokenCache = gigaChatTokens,
+            httpClientFactory = http,
+            timeouts = CloudClientTimeouts.CONFIG,
+        )
     }
 
     private fun Admission.Granted.requireKey(): String = checkNotNull(apiKey) { "admission granted no key" }
@@ -215,6 +245,14 @@ class KoogClientFactory @Inject constructor(
     /** The trimmed, non-blank key saved for [provider]; `null` for a provider that uses none. */
     private suspend fun apiKey(provider: CloudProvider): String? =
         if (provider.usesApiKey) apiKeyRepository.getApiKey(provider).firstOrNull()?.trimmedOrNull() else null
+
+    /** The scope of GigaChat's key; `null` for every other provider. */
+    private suspend fun gigaChatScope(provider: CloudProvider): GigaChatScope? =
+        if (provider == CloudProvider.GIGACHAT) {
+            apiKeyRepository.getGigaChatScope().firstOrNull() ?: GigaChatScope.DEFAULT
+        } else {
+            null
+        }
 
     /** The trimmed, non-blank address of a server the user runs, or `null` when none is configured. */
     private suspend fun baseUrl(provider: CloudProvider): String? =

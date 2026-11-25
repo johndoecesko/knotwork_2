@@ -1,6 +1,7 @@
 package app.knotwork.android.domain.repositories
 
 import app.knotwork.android.domain.models.CloudProvider
+import app.knotwork.android.domain.models.GigaChatScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.firstOrNull
 
@@ -85,6 +86,21 @@ interface ApiKeyRepository {
      * @param size The context window size to save.
      */
     suspend fun setOllamaContextWindowSize(size: Int)
+
+    /**
+     * The OAuth scope the GigaChat authorization key is used under ([CloudProvider.GIGACHAT]).
+     * Not a secret: stored and backed up with the provider's model.
+     *
+     * @return A Flow emitting the scope; [GigaChatScope.DEFAULT] when none is saved.
+     */
+    fun getGigaChatScope(): Flow<GigaChatScope>
+
+    /**
+     * Saves the OAuth scope of the GigaChat authorization key.
+     *
+     * @param scope The scope the user's GigaChat project was issued for.
+     */
+    suspend fun setGigaChatScope(scope: GigaChatScope)
 }
 
 /**

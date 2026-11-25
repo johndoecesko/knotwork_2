@@ -653,12 +653,24 @@ A model file downloaded from Hugging Face is checked before it becomes a model.
 ### API keys for cloud providers
 
 - Keys for optional cloud LLM providers (OpenAI, Anthropic, Google, DeepSeek,
-  OpenRouter, Groq, and an OpenAI-compatible server you run, if it uses one) —
+  OpenRouter, Groq, the GigaChat authorization key, and an OpenAI-compatible
+  server you run, if it uses one) —
   and the addresses of servers you run — are stored exclusively in the same kind
   of Keystore-backed encrypted store as the database passphrase (AES-256-GCM
   under its own dedicated Android Keystore key).
 - A server you run may need no key. Then no `Authorization` header is sent at
   all, rather than an empty one.
+- GigaChat's authorization key is sent only to Sber's OAuth endpoint
+  (`ngw.devices.sberbank.ru`), as `Authorization: Basic`. The 30-minute access
+  token it returns is held in process memory only (`GigaChatTokenCache`, keyed
+  by a SHA-256 digest of key and scope), never persisted or backed up, and is
+  dropped when the API answers 401. Error text is scrubbed of `Basic`
+  credentials as of `Bearer` tokens.
+- Sber's GigaChat hosts present certificates chaining to the Ministry of
+  Digital Development's "Russian Trusted Root CA", which Android does not ship.
+  That root and its 2024 sub-CA are trust anchors in a `domain-config` for
+  `devices.sberbank.ru` (with subdomains) and `api.giga.chat` only; every other
+  host keeps the system store alone.
 - Keys are never written to plain `SharedPreferences`, DataStore, log files,
   exported chat archives, or any artifact checked into the repository. A backup
   carries them only when you tick *Include API keys and sign-ins*, sealed under

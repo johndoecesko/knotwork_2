@@ -11,7 +11,7 @@ import app.knotwork.design.components.misc.TestProbeUi
  * and is not drawn.
  *
  * The fields come in the order a user fills them, and the test row sits between the last field it
- * reads and the first one it feeds: address → key → *Test connection* → model.
+ * reads and the first one it feeds: address → key → option → *Test connection* → model.
  *
  * @property title Screen title: the provider's name.
  * @property backContentDescription Accessible label of the back control.
@@ -19,6 +19,7 @@ import app.knotwork.design.components.misc.TestProbeUi
  * @property cleartextConsent Pending consent for an unencrypted origin, or `null`.
  * @property fixedAddress Where a provider with a fixed address sends, shown read-only.
  * @property apiKey The key field, or `null` for a provider that takes none.
+ * @property option A fixed choice the provider's key is used with (GigaChat's scope), or `null`.
  * @property test The *Test connection* row.
  * @property model The model field.
  * @property contextWindow The context-window field, for a provider that has one.
@@ -35,6 +36,7 @@ data class ProviderDetailViewState(
     val cleartextConsent: CleartextConsentUi? = null,
     val fixedAddress: ProviderFixedAddressUi? = null,
     val apiKey: ProviderKeyUi? = null,
+    val option: ProviderOptionUi? = null,
     val contextWindow: ProviderContextWindowUi? = null,
     val modelSheet: ModelSheetUi? = null,
 )
@@ -87,6 +89,30 @@ data class ProviderKeyUi(
     val placeholder: String? = null,
     val hint: String? = null,
 )
+
+/**
+ * A fixed choice that belongs to the key — such as the API version (scope) a GigaChat key was
+ * issued for. Drawn as a dropdown; its value is one of [choices] by id.
+ *
+ * @property label Field label.
+ * @property choices The choices, in the order shown.
+ * @property selectedId The id of the chosen one.
+ * @property hint A note under the field.
+ */
+data class ProviderOptionUi(
+    val label: String,
+    val choices: List<ProviderOptionChoiceUi>,
+    val selectedId: String,
+    val hint: String? = null,
+)
+
+/**
+ * One choice of a [ProviderOptionUi].
+ *
+ * @property id What the edit reports back.
+ * @property label What the user reads.
+ */
+data class ProviderOptionChoiceUi(val id: String, val label: String)
 
 /**
  * The model field: a built-in list to pick from, or a typed id.
@@ -190,6 +216,7 @@ data class CloudRetryViewState(
  * @property onTestCancel *Cancel* was pressed on a running test.
  * @property onChooseModel *Choose* was pressed on the model field.
  * @property onModelSheetDismiss The model list was closed without a pick.
+ * @property onOptionChange A choice of the option field was picked; its id.
  */
 data class ProviderDetailCallbacks(
     val onBack: () -> Unit,
@@ -204,6 +231,7 @@ data class ProviderDetailCallbacks(
     val onTestCancel: () -> Unit = {},
     val onChooseModel: () -> Unit = {},
     val onModelSheetDismiss: () -> Unit = {},
+    val onOptionChange: (String) -> Unit = {},
 )
 
 /** Inert callbacks, so a preview or a snapshot needs none. */

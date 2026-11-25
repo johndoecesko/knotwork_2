@@ -283,7 +283,7 @@ class GigaChatLLMClientTest {
 
     private companion object {
         /** Base64 of `client-id:client-secret` — a shape, not a key. */
-        const val AUTH_KEY = "Y2xpZW50LWlkOmNsaWVudC1zZWNyZXQ="
+        const val AUTH_KEY = "Y2xpZW50LWlkOmNsaWVudC1zZWNyZXQ=" // gitleaks:allow
         const val THIRTY_MINUTES_MS = 30 * 60 * 1000L
     }
 }

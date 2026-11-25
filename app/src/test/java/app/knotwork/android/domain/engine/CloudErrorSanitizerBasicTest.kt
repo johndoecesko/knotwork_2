@@ -11,7 +11,8 @@ class CloudErrorSanitizerBasicTest {
 
     @Test
     fun `given a Basic authorization key in a message when redacted then it is masked`() {
-        val text = CloudErrorSanitizer.redactSecrets("Authorization: Basic MTIzNDU2Nzg5MDphYmNkZWZnaA== refused")
+        val message = "Authorization: Basic MTIzNDU2Nzg5MDphYmNkZWZnaA== refused" // gitleaks:allow
+        val text = CloudErrorSanitizer.redactSecrets(message)
 
         assertFalse(text.contains("MTIzNDU2"))
         assertEquals("Authorization: Basic *** refused", text)

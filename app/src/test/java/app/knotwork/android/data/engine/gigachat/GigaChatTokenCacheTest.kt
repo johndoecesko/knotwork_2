@@ -103,7 +103,7 @@ class GigaChatTokenCacheTest {
 
     @Test
     fun `given credentials when printed or keyed then the key never shows`() {
-        val credentials = GigaChatCredentials("Basic c2VjcmV0LWtleQ==", GigaChatScope.PERSONAL)
+        val credentials = GigaChatCredentials("Basic c2VjcmV0LWtleQ==", GigaChatScope.PERSONAL) // gitleaks:allow
 
         assertEquals("c2VjcmV0LWtleQ==", credentials.authorizationKey)
         assertFalse(credentials.toString().contains("c2VjcmV0"))

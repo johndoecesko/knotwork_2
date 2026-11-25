@@ -50,16 +50,15 @@ class ApiKeyManagerGigaChatTest {
     }
 
     @Test
-    fun `given a scope saved when a backup is taken then the scope is a plain entry and the key a secret`() =
-        runTest {
-            val subject = manager()
-            subject.setApiKey(CloudProvider.GIGACHAT, "a2V5")
-            subject.setGigaChatScope(GigaChatScope.BUSINESS_PAYG)
+    fun `given a scope saved when a backup is taken then the scope is a plain entry and the key a secret`() = runTest {
+        val subject = manager()
+        subject.setApiKey(CloudProvider.GIGACHAT, "a2V5")
+        subject.setGigaChatScope(GigaChatScope.BUSINESS_PAYG)
 
-            assertEquals("GIGACHAT_API_CORP", subject.alwaysEntries()["gigachat_scope"])
-            assertFalse(subject.alwaysEntries().containsKey("gigachat_api_key"))
-            assertEquals("a2V5", subject.secretEntries()["gigachat_api_key"])
-        }
+        assertEquals("GIGACHAT_API_CORP", subject.alwaysEntries()["gigachat_scope"])
+        assertFalse(subject.alwaysEntries().containsKey("gigachat_api_key"))
+        assertEquals("a2V5", subject.secretEntries()["gigachat_api_key"])
+    }
 
     @Test
     fun `given a backup with a scope when restored then the scope is applied`() = runTest {

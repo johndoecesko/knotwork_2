@@ -103,8 +103,8 @@ class ModelTextTranslationCoverageTest {
                     val english = JSONObject(entry.source)
                     val translated = runCatching { JSONObject(entry.text) }.getOrNull()
                         ?: return@mapNotNull "${entry.sources.first()}: the translation is not JSON"
-                    val sameProperties = english.getJSONObject("properties").keySet() ==
-                        translated.getJSONObject("properties").keySet()
+                    val sameProperties = english.getJSONObject("properties").keys().asSequence().toSet() ==
+                        translated.getJSONObject("properties").keys().asSequence().toSet()
                     val sameRequired = english.optJSONArray("required")?.toString() ==
                         translated.optJSONArray("required")?.toString()
                     if (sameProperties && sameRequired) null else "${entry.sources.first()}: another schema"
